@@ -1,0 +1,54 @@
+{% extends "discord/dash_base.html" %} 
+{% load static %}
+{% block title %}Stats '{{guild.name}}'{% endblock %}
+{% block nav_title %}{{ huild.name }} Stats{% endblock %}
+{% block style %}
+
+{% endblock %}
+{% block content %}
+    <div class="row mx-2 pt-4">
+        <div class="col-lg mb-2">
+            <h2 class="card-title mb-0">Stats are very much WIP atm</h2>
+            <div class="card card-raised">
+                <div class="card-header bg-blue px-4 text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="me-4">
+                            <h2 class="card-title mb-0">Stats</h2>
+                            <div class="card-subtitle">Last 30 days...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {{30daystats| safe}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mx-2 pt-4">
+        <div class="col-lg-6">
+            <!-- Email notifications preferences card-->
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Channels Stats (All-Time)
+                </div>
+                <div class="card-body">
+                    
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    User Stats (All-Time)
+                </div>
+                <div class="card-body p-4">
+                
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block js%}
+
+{% endblock %}

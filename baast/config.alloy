@@ -1,0 +1,37 @@
+// Grafana Faro Web SDK sends native JSON to /collect (not OTLP /v1/logs).
+faro.receiver "default" {
+  log_format = "json"
+
+  // Promote common Faro fields to Loki labels for dashboard filters.
+  extra_log_labels = {
+    kind     = "",
+    app_name = "",
+  }
+
+  server {
+    listen_address = "0.0.0.0"
+    listen_port    = 12347
+    cors_allowed_origins = [
+      "http://localhost:8000",
+      "http://127.0.0.1:8000",
+      "https://baast.app",
+      "https://www.baast.app",
+    ]
+  }
+
+  output {
+    logs   = [loki.write.local_loki.receiver]
+    traces = []
+  }
+}
+
+loki.write "local_loki" {
+  external_labels = {
+    job = "faro",
+  }
+
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+

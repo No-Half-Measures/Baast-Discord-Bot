@@ -1,0 +1,143 @@
+{% extends "discord/dash_base.html" %} 
+{% load static %}
+{% block title %}User{% endblock %}
+{% block nav_title %}{{ user.name }}{% endblock %}
+{% block content %}	
+    <div class="row gx-4 pt-4">
+        <div class="col-lg-6">
+            <!-- Email notifications preferences card-->
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Discord
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item pt-4">
+                            <h5 class="card-title border-bottom">Baast Settings</h5>
+
+                            <div class="btn-group d-flex pb-2" role="group">
+                                <button type="button" class="btn btn-outline-secondary col-2" disabled>Notifications</button>
+                                <button type="button" class="btn btn-{% if user.notifications_enabled %}success{% else %}danger{% endif %} col-6">{% if user.notifications_enabled %}Enabled{% else %}Disabled{% endif %}</button>
+                            </div>
+
+                            <div class="input-group mb-2 mt-2">
+                                <span class="input-group-text justify-content-end align-items-end" style="width: 30%;" id="basic-addon1">Customer ID:</span>
+                                <input type="text" class="form-control" placeholder="None" id="sub_id" value="{{nav_data.nav_user.stripeCustomerId}}" autocomplete="off" disabled>
+                            </div>
+                            
+                            {% if nav_data.nav_user.stripeCustomerId %}
+                            <form class="inner d-flex" method="POST" action="/manage-subscription">
+                                {% csrf_token %}
+                                <button type="submit" class="w-40 btn bg-gold ms-auto trio bcheckout">Manage Billing</button>
+                            </form>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Subscriptions
+                </div>
+                <div class="card-body p-4">
+
+                    {% for guild in nav_data.nav_guilds %}
+                        {% if guild.stripeSubscriptionId in subscriptions %}
+                        <div class="card card-raised mb-3">
+                            <div class="card-header bg-gokd">
+                                {{ guild.name }}
+                            </div>
+                            <div class="card-body p-4" data-guild-id="{{guild.id}}">
+                                <div class="btn-group d-flex pb-2" role="group">
+                                    <button type="button" class="btn btn-outline-secondary col-2" disabled>Premium Status</button>
+                                    <button type="button" class="btn btn-{% if guild.is_premium %}success{% else %}danger{% endif %} col-6">{% if guild.is_premium %}Active{% else %}{% if guild.sub_cancelled %}Cancelled{% else %}Expired{% endif %}{% endif %}</button>
+                                </div>
+
+                                <div class="input-group mb-2 mt-2">
+                                    <span class="input-group-text justify-content-end align-items-end" style="width: 30%;" id="basic-addon1">Subscription ID:</span>
+                                    <input type="text" class="form-control" placeholder="None" id="sub_id" value="{{guild.stripeSubscriptionId}}" autocomplete="off" disabled>
+                                </div>
+
+                                {% if guild.sub_cancelled %}
+                                <div class="input-group mb-2 mt-2">
+                                    <span class="input-group-text justify-content-end align-items-end" style="width: 30%;" id="basic-addon1">Ending on:</span>
+                                    <input type="text" class="form-control" placeholder="None" id="sub_id" value="{{guild.sub_end_date}}" autocomplete="off" disabled>
+                                </div>
+
+                                <button class="btn btn-outline-secondary" type="button" href="#" id="sub_id_btn">Manage Subscription</button>
+                                {% else %}
+                                <div class="input-group mb-2 mt-2">
+                                    <span class="input-group-text justify-content-end align-items-end" style="width: 30%;" id="basic-addon1">Renewing on:</span>
+                                    <input type="text" class="form-control" placeholder="None" id="sub_id" value="{{guild.sub_end_date}}" autocomplete="off" disabled>
+                                </div>
+
+                                <button class="btn btn-outline-secondary" type="button" href="{{guild.manage_url}}" id="cancelSubscription">Cancel Subscription</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block js%}
+    <script>
+        function copyelement(elementid) {
+            var copyText = document.getElementById(elementid);
+            var element = document.getElementById(elementid + "_btn");
+
+            var tooltip = bootstrap.Tooltip.getOrCreateInstance(element)
+
+            tooltip.enable()
+            tooltip.show()
+
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            
+            navigator.clipboard.writeText(copyText.value);
+
+            setTimeout(function(){
+                tooltip.hide()
+                tooltip.disable()
+            }, 1000);
+        }
+
+        $( document ).ready(function() {
+            var utcSeconds = {{ subscription.current_period_end }};
+            var d = new Date(0); // The 0 there is the key, which sets the date to the epoch
+            d.setUTCSeconds(utcSeconds);
+
+            $('#exp').val(d)
+
+
+            $("button[id='cancelSubscription']").click(function(event ){
+                event.stopPropagation();
+
+                var serializedData = $(this).serialize();
+                url = "{% url 'events:cancel_sub' %}"
+
+                serializedData += 'guild_id=' + $(this).parent().data('value');
+
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'GET',
+                    url: url,
+                    dataType: "json",
+                    data: serializedData,
+                    success: function (response) {
+                        location.href = response['url']
+                    },
+                    error: function (response) {
+                        // alert the error if any error occured
+                        console.log('ERROR:' + response.responseJSON.error);
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

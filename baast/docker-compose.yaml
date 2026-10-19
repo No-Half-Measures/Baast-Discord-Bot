@@ -1,0 +1,197 @@
+services:
+  nginx:
+    container_name: nginx
+    command: "/bin/sh -c 'openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt; while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    image: nginx:alpine
+    restart: on-failure
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf ##LIVE
+      #- ./nginx_local.conf:/etc/nginx/nginx.conf ##LOCAL
+      #- ./mime.types:/etc/nginx/mime.types ##LOCAL
+      - ./discord/static:/static 
+      - ./discord/media:/media 
+      - ./data/certbot/conf:/etc/letsencrypt ##LIVE
+      - ./data/certbot/www:/var/www/certbot ##LIVE
+      #- ./certs:/etc/nginx ##LOCAL
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - baast-network
+    depends_on:
+      - grafana
+      
+  certbot:
+    container_name: certbot
+    image: certbot/certbot
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+  
+  redis:
+    container_name: redis
+    image: "redis"
+    restart: on-failure
+    ports:
+      - "6379:6379"
+    networks:
+      - baast-network
+    command: ["redis-server", "--bind", "redis", "--port", "6379", "--requirepass", "PASSWORD_HERE"]
+    
+  baast-web:
+    container_name: baast-web
+    build:
+      context: .
+    command: bash -c 'python manage.py collectstatic --no-input && python manage.py migrate && python -m bot.cli.run_http'
+    volumes:
+      - .:/home/ubuntu/baast_web/baast
+      - ./discord/static:/static 
+      - ./discord/media:/media 
+    restart: on-failure
+    expose:
+      - 8000
+    networks:
+      - baast-network
+    depends_on:
+      #- nginx
+      - redis
+      - baast_bot
+  
+  baast_bot:
+    container_name: baast_bot
+    build:
+      context: .
+    command: bash -c 'python -O -m bot.cli.run_workers'
+    volumes:
+      - .:/home/ubuntu/baast_web/baast
+    restart: on-failure
+    networks:
+      - baast-network
+  
+  promethus:
+    container_name: promethus
+    image: "prom/prometheus"
+    volumes:
+      - prom_data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - baast-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+  
+  promethus_postgres_exporter:
+    container_name: postgres_exporter
+    image: "quay.io/prometheuscommunity/postgres-exporter"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://USER_HERE:PASSWORD_HERE@db:5432/postgres?sslmode=disable
+    ports:
+      - 9187:9187
+    networks:
+      - baast-network
+    depends_on:
+      - promethus
+
+  grafana:
+    container_name: grafana
+    image: "grafana/grafana"
+    ports:
+      - "3000:3000"
+    volumes:
+      - graf_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_JSON_ENABLED=true
+    networks:
+      - baast-network
+    depends_on:
+      - promethus
+      - loki
+
+  # Loki (Log Storage)
+  loki:
+    image: grafana/loki:latest
+    container_name: loki_oss
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - baast-network
+
+  # Grafana Alloy (Telemetry Collector)
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy_collector
+    ports:
+      - "12345:12345" # Alloy UI
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver (Faro hits this)
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+    command: run --storage.path=/tmp/alloy-modules /etc/alloy/config.alloy
+    depends_on:
+      - loki
+    networks:
+      - baast-network
+
+  node-exporter:
+    container_name: node-exporter
+    image: "prom/node-exporter"
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - baast-network
+
+  nginx-exporter:
+    container_name: nginx-exporter
+    image: "nginx/nginx-prometheus-exporter"
+    ports:
+      - "9113:9113"
+    command:
+      - -nginx.scrape-uri=http://nginx/nginx_status
+    networks:
+      - baast-network
+    depends_on:
+      - nginx
+
+  cadvisor:
+    container_name: cadvisor
+    image: "gcr.io/cadvisor/cadvisor:v0.47.2"
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    privileged: true
+    networks:
+      - baast-network
+    depends_on:
+      - promethus
+
+networks:
+  baast-network:
+    external: true
+
+volumes:
+  static: {}
+  prom_data: {}
+  graf_data: {}

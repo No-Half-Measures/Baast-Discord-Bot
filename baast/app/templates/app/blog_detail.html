@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Baast{% endblock %}</title>
+    <meta name="description" content="The Ultimate Events Bot"/>
+    <meta name="url" content="https://baast.app/">
+    <link rel="icon" type="image/x-icon" href="{% static 'baast_icon.png' %}">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ post.title }}" />
+    <meta property="og:url" content="https://baast.app/post/{{ post.slug }}/" />
+    <meta property="og:image" content="{{ post.featured_image }}" />
+    <meta property="og:description" content="{{ post.content|truncatewords_html:30|striptags|safe }}" />
+    <meta property="article:published_time" content="{{ post.created_at|date:"c" }}" />
+    <meta name="theme-color" content="#edbe49">
+    <meta property="article:tag" content="Baast">
+    <meta property="article:tag" content="Discord">
+    <meta property="article:tag" content="Events">
+    <meta property="article:tag" content="App">
+    <meta property="article:tag" content="{{ post.get_post_type_display }}">
+
+
+    <!-- Include this to make the og:image larger -->
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,200&display=swap" rel="stylesheet"> 
+    <!-- CSS only -->
+
+    <link href="{% static 'style.css' %}" rel="stylesheet" type="text/css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" type="text/css">
+</head>
+
+<body class="bg-blue">
+    {% include 'app/header_menu.html' %}
+    
+    <!-- Cover Image Header -->
+    {% if post.featured_image %}
+    <div class="blog-cover-header" data-bg-image="{{ post.featured_image.url }}">
+        <div class="blog-cover-overlay"></div>
+        <div class="blog-cover-content">
+            <div class="container position-relative">
+                <span class="badge bg-{% if post.post_type == 'news' %}primary{% else %}success{% endif %} fs-6">
+                    {{ post.get_post_type_display }}
+                </span>
+                <h1 class="blog-cover-title">{{ post.title }}</h1>
+                <p class="blog-cover-meta">
+                    {{ post.created_at|date:"F j, Y" }}{% comment %} by {{ post.get_author_name|default:"Unknown Author" }} {% endcomment %}
+                </p>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Apply background image to pseudo-element
+        document.addEventListener('DOMContentLoaded', function() {
+            const coverHeader = document.querySelector('.blog-cover-header');
+            const bgImage = coverHeader.getAttribute('data-bg-image');
+            if (bgImage) {
+                const style = document.createElement('style');
+                style.textContent = `.blog-cover-header::before { background-image: url('${bgImage}'); }`;
+                document.head.appendChild(style);
+            }
+        });
+    </script>
+    {% else %}
+    <!-- Fallback header without image -->
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-12">
+                <span class="badge bg-{% if post.post_type == 'news' %}primary{% else %}warning{% endif %} fs-6">
+                    {{ post.get_post_type_display }}
+                </span>
+                <h1 class="display-4">{{ post.title }}</h1>
+                <p class="lead text-muted">
+                    {{ post.created_at|date:"F j, Y" }} by {{ post.get_author_name|default:"Unknown Author" }}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <main class="container mb-4">
+        <div class="row g-5"> 
+            <div class="col-md-8">
+                <article class="blog-post">
+                    {{ post.content|safe }}
+                </article>
+                <nav class="blog-pagination mt-4" aria-label="Pagination">
+                    <a class="btn btn-outline-primary rounded-pill" href="{% url 'events:blog_list' %}{% if request.GET.type %}?type={{ request.GET.type }}{% endif %}">← Back to all posts</a>
+                </nav>
+            </div> 
+            <div class="col-md-4 d-none d-sm-block">
+                <div class="position-sticky" style="top: 2rem;">
+                    <h4 class="fst-italic">Recent posts</h4>
+                    <ul class="list-unstyled">
+                        {% for recent_post in recent_posts %}
+                        <li>
+                            <a class="d-flex flex-column flex-lg-row gap-3 align-items-start align-items-lg-center py-3 link-body-emphasis text-decoration-none border-top" href="{% url 'events:blog_detail' recent_post.slug %}">
+                                {% if recent_post.featured_image %}
+                                <img src="{{ recent_post.featured_image.url }}" alt="{{ recent_post.title }}" class="bd-placeholder-img" style="height: 96px; width: 100px; object-fit: cover;">
+                                {% else %}
+                                <svg aria-hidden="true" class="bd-placeholder-img" height="96" preserveAspectRatio="xMidYMid slice" width="100px" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="100%" height="100%" fill="#777"></rect>
+                                </svg>
+                                {% endif %}
+                                <div class="col-lg-8">
+                                    <h6 class="mb-0">{{ recent_post.title }}</h6>
+                                    <small class="text-body-secondary">{{ recent_post.created_at|date:"F j, Y" }}</small>
+                                    <div class="mt-1">
+                                        <span class="badge bg-{% if recent_post.post_type == 'news' %}primary{% else %}success{% endif %} badge-sm">
+                                            {{ recent_post.get_post_type_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        {% empty %}
+                        <li class="py-3 text-muted">No other posts available.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include 'app/footer.html' %}
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
+
+    <script>
+        $( document ).ready(function() {
+            $('a[id="blog"]').addClass('active');
+        });
+        
+        feather.replace({ 'aria-hidden': 'true' })
+
+        function topFunction() {
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+        }
+    </script>
+</body>
+</html>

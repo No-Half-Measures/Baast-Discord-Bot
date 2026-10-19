@@ -1,0 +1,19 @@
+<div class="py-5 bg-dark-blue">
+    <div class="container">
+        <footer class="py-3 my-4">
+            <ul class="nav justify-content-center border-bottom pb-3 mb-3">
+                <li class="nav-item"><a href="/pricing" class="nav-link px-2 text-white bs-secondary-color">Pricing</a></li>
+                <li class="nav-item"><a href="{% url 'events:faq' %}" class="nav-link px-2 text-white bs-secondary-color">FAQs</a></li>
+                {% comment %} <li class="nav-item"><a href="/about" class="nav-link px-2 text-white bs-secondary-color">About</a></li> {% endcomment %}
+                <li class="nav-item"><a href="{% url 'events:privacy' %}" class="nav-link px-2 text-white">Privacy Policy</a></li>
+                <li class="nav-item"><a href="{% url 'events:tos' %}" class="nav-link px-2 text-white">Terms of Service</a></li>
+            </ul>
+            {% comment %} <p class="float-end"><a onclick="topFunction();">Back to top</a></p> {% endcomment %}
+            <p class="text-center bs-secondary-color">&copy; <span id="year">2025</span> Baast. All rights reserved.</p>
+        </footer>
+    </div>
+</div>
+
+{% include 'app/faro.html' %}
+
+{% comment %} document.getElementById('year').textContent = new Date().getFullYear(); {% endcomment %}

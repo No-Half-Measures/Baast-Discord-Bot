@@ -1,0 +1,113 @@
+<div class="modal fade panel-modal" tabindex="-1" id="eventModal">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="titleHead">Creating new event...</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger" role="alert" id="nevntAlert" hidden>Error: ...............</div>
+
+                <div class="panel-field input-group">
+                    <span class="input-group-text justify-content-end">Mention</span>
+                    <select class="selectpicker form-control" aria-label="Select role(s)" id="neMention" multiple data-max-options="20" data-none-selected-text="None" data-width="auto">
+                        {% for role in roles %}
+                            <option value='{{role.discord_id}}'>{{role.discord_name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="panel-field input-group">
+                    <span class="input-group-text justify-content-end">Channel</span>
+                    <select class="form-select" aria-label="Select a channel to post the event in:" id="neChannels">
+                        {% for channel in channels %}
+                            {% if channel.discord_id in nav_data.conf.event_channels %}
+                            <option value='{{channel.discord_id}}'>{{channel.name}}</option>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% for channel in channels %}
+                            {% if channel.discord_id not in nav_data.conf.event_channels %}
+                            <option value='{{channel.discord_id}}'>{{channel.name}}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="panel-field input-group">
+                    <span class="input-group-text justify-content-end">Title</span>
+                    <input type="text" class="form-control" aria-label="Event Title" autocomplete="off" value="" maxlength="200" minlength="1" id="neTitle">
+                </div>
+
+                <div class="panel-field input-group">
+                    <span class="input-group-text justify-content-end">Description</span>
+                    <textarea class="form-control" aria-label="Event Description" autocomplete="off" maxlength="1600" minlength="1" id="neDescription"></textarea>
+                </div>
+
+                <div class="panel-field input-group">
+                    <span class="input-group-text justify-content-end">Color</span>
+                    <input type="text" class="form-control" id="nehexInput" autocomplete="off" maxlength="7" minlength="7" value="#f3df73">
+                    <input type="color" class="form-control form-control-color" autocomplete="off" id="necolorPicker" value="#f3df73" {% if is_linked_event == True %}disabled{% endif %}>
+                </div>
+
+                <div class="panel-field input-group date">
+                    <span class="input-group-text justify-content-end">Date</span>
+                    <input id="neDateTime" type="text" class="form-control" autocomplete="off">
+                    <select class="form-select input-group-text bg-white" aria-label="Select a Timezone:" autocomplete="off" id="neTimeZone">
+                    {% if timezones %}
+                        {% for tz in timezones %}
+                            <option value={{tz}}>{{tz}}</option>
+                        {% endfor %}
+                    {% endif %}
+                    </select>
+                    <span class="input-group-text bg-white">
+                        <span data-feather="calendar"></span>
+                    </span>
+                </div>
+
+                <div class="panel-field input-group recurring">
+                    <span class="input-group-text justify-content-end">Recurring Interval <sub>(days)</sub></span>
+                    <input id="neRecInterval" type="text" class="form-control" autocomplete="off" value="0">
+                    <span class="input-group-text">Until</span>
+                    <div class="input-group-text">
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" id="neRecEndless" checked>
+                            <label class="form-check-label" for="neRecEndless">Endless</label>
+                        </div>
+                    </div>
+                    <input id="neRecDate" type="text" class="form-control" autocomplete="off" disabled>
+                    <span class="input-group-text bg-white">
+                        <span data-feather="repeat"></span>
+                    </span>
+                </div>
+
+                <div class="panel-field input-group">
+                    <span class="input-group-text justify-content-end">Template</span>
+                    <select class="form-select" aria-label="Select a template" id="neTemplates">
+                    </select>
+                </div>
+
+                <div class="panel-field input-group">
+                    <span class="input-group-text justify-content-end">Options</span>
+                    <select class="form-select" aria-label="Select a option preset" id="neOptions" disabled>
+                    </select>
+                </div>
+
+                <div class="panel-field input-group">
+                    <span class="input-group-text justify-content-end">Roleset</span>
+                    <select class="form-select" aria-label="Select a roleset" id="neRoleset" disabled>
+                    </select>
+                </div>
+
+                <div class="panel-field input-group mb-0">
+                    <span class="input-group-text justify-content-end">Capacity</span>
+                    <input id="neCapacity" type="number" min="1" max="100" class="form-control" autocomplete="off"
+                     placeholder="capacity" aria-label="Capacity">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="neSave">Save</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,46 @@
+services:
+  db:
+    container_name: postgres
+    image: postgres
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5332:5432"
+    networks:
+      - baast-network
+    environment:
+      POSTGRES_PASSWORD: PASSWORD_HERE
+      POSTGRES_USER: USER_HERE
+      POSTGRES_DB: live_baast
+      PGDATA: /var/lib/postgresql/data
+  
+  db-backup:
+    container_name: postgres-backup
+    image: postgres:15
+    restart: "no"
+    volumes:
+      - ./backups:/backups
+      - ./backup-scripts:/backup-scripts
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: USER_HERE
+      POSTGRES_PASSWORD: PASSWORD_HERE
+      POSTGRES_DB: live_baast
+      BACKUP_RETENTION_DAYS: 28
+      BACKUP_TIME: "02:00"
+      BACKUP_COMPRESSION: "gzip"
+      BACKUP_FORMAT: "custom"
+    networks:
+      - baast-network
+    command: ["/backup-scripts/backup.sh"]
+    depends_on:
+      - postgres
+
+networks:
+  baast-network:
+    external: true
+
+volumes:
+  db-data: {}

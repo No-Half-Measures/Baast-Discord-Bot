@@ -1,0 +1,61 @@
+name: Deploy Baast Application
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'baast/**'  # Only trigger when files in baast/ directory change
+  workflow_dispatch:
+
+env:
+  SERVER_USER: ${{ secrets.SERVER_USER }}
+  SERVER_HOST: ${{ secrets.SERVER_HOST }}
+  SERVER_PORT: ${{ secrets.SERVER_PORT }}
+  PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
+        
+    - name: Test SSH connection
+      run: |
+        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} 'echo "SSH connection successful"'
+        
+    - name: Upload baast directory contents
+      run: |
+        # Create a temporary directory with only baast contents
+        mkdir -p temp_deploy
+        cp -r baast/* temp_deploy/
+        cp deploy.sh temp_deploy/
+        
+        # Ensure destination directory exists on server
+        ssh -o StrictHostKeyChecking=no -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} "mkdir -p ${{ env.PROJECT_PATH }}"
+        
+        # Upload using tar+ssh (more reliable than scp for directories)
+        tar czf - -C temp_deploy . | ssh -o StrictHostKeyChecking=no -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} "cd ${{ env.PROJECT_PATH }} && tar xzf -"
+        
+        # Clean up temp directory
+        rm -rf temp_deploy
+        
+    - name: Deploy application
+      run: |
+        ssh -o StrictHostKeyChecking=no -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} "cd ${{ env.PROJECT_PATH }} && chmod +x deploy.sh && ./deploy.sh"
+        
+    - name: Verify deployment
+      run: |
+        ssh -o StrictHostKeyChecking=no -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} "cd ${{ env.PROJECT_PATH }} && docker compose ps"
+        
+    - name: Health check
+      run: |
+        echo "Waiting for application to be ready..."
+        sleep 30
+        curl -f https://baast.app || echo "Health check failed, but deployment may still be successful"

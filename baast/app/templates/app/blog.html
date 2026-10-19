@@ -1,0 +1,166 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Baast{% endblock %}</title>
+    <meta name="description" content="The Ultimate Events Bot"/>
+    <meta name="url" content="https://baast.app/">
+    <link rel="icon" type="image/x-icon" href="{% static 'baast_icon.png' %}">
+
+    <meta property="og:title" content="Baast" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://baast.app/" />
+    <meta property="og:image" content="{% static 'baast_icon.png' %}" />
+    <meta property="og:description" content="The Ultimate Events Bot" />
+    <meta name="theme-color" content="#edbe49">
+
+    <!-- Include this to make the og:image larger -->
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,200&display=swap" rel="stylesheet"> 
+    <!-- CSS only -->
+
+    <link href="{% static 'style.css' %}" rel="stylesheet" type="text/css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" type="text/css">
+</head>
+
+<body class="bg-blue">
+    {% include 'app/header_menu.html' %}
+        <div class="pt-5 bg-blue">
+            <div class="container">
+                <div class="row px-2">
+                    <div class="col rounded bg-dark-blue">
+                        <div class="flex space-x-4 ps-4">
+                            <ul class="nav nav-underline">
+                                <li class="nav-item">
+                                    <a class="nav-link text-white {% if not request.GET.type %}active{% endif %}" aria-current="page" href="{% url 'events:blog_list' %}">All</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-white {% if request.GET.type == 'news' %}active{% endif %}" href="{% url 'events:blog_list' %}?type=news">News</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-white {% if request.GET.type == 'changelog' %}active{% endif %}" href="{% url 'events:blog_list' %}?type=changelog">Updates</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="py-5 bg-blue">
+            <div class="container">
+                <div class="row mb-2"> 
+                    {% for post in page_obj %}
+                    <div class="col-md-6"> 
+                        <div class="row g-0 border rounded overflow-hidden flex-md-row mb-4 shadow-sm position-relative {% if forloop.counter0|divisibleby:4 or forloop.counter0|add:1|divisibleby:4 %}bg-sand{% else %}bg-gold{% endif %}"> 
+                            <div class="col p-4 d-flex flex-column position-static">
+                                <h3 class="mb-0">{{ post.title }} <sup><span class="badge text-bg-{% if post.post_type == 'news' %}primary{% else %}success{% endif %}">{{ post.get_post_type_display }}</span></sup></h3> 
+                                <div class="mb-1 bs-secondary-color">{{ post.created_at|date:"F j, Y" }}</div> 
+                                <p class="card-text mb-auto">{{ post.content|truncatewords_html:20|safe }}</p> 
+                                <a href="{% url 'events:blog_detail' post.slug %}" class="icon-link gap-1 icon-link-hover stretched-link">
+                                    Continue reading
+                                    <svg class="bi" aria-hidden="true"><use xlink:href="#chevron-right"></use></svg> 
+                                </a> 
+                            </div> 
+                            {% if post.featured_image %}
+                            <div class="col-auto d-none d-lg-block" style="width: 200px;"> 
+                                <img src="{{ post.featured_image.url }}" alt="{{ post.title }}" class="img-fluid h-100 w-100" style="object-fit: cover; height: 250px;">
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-full text-center py-8">
+                        <p class="text-gray-600">No blog posts available yet.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% comment %} <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for post in page_obj %}
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                {% if post.featured_image %}
+                <img src="{{ post.featured_image.url }}" alt="{{ post.title }}" class="w-full h-48 object-cover">
+                {% endif %}
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-xl font-semibold">
+                            <a href="{% url 'events:blog_detail' post.slug %}" class="text-blue-600 hover:text-blue-800">
+                                {{ post.title }}
+                            </a>
+                        </h2>
+                        <span class="px-2 py-1 text-sm rounded-full {% if post.post_type == 'news' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ post.get_post_type_display }}
+                        </span>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        By {{ post.get_author_name }} on {{ post.created_at|date:"F j, Y" }}
+                    </p>
+                    <p class="text-gray-700 mb-4">
+                        {{ post.content|truncatewords:30 }}
+                    </p>
+                    <a href="{% url 'events:blog_detail' post.slug %}" class="text-blue-600 hover:text-blue-800 font-medium">
+                        Read more →
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-8">
+                <p class="text-gray-600">No blog posts available yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="mt-8 flex justify-center">
+            <nav class="inline-flex rounded-md shadow">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}" class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Previous
+                </a>
+                {% endif %}
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}" class="px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Next
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %} {% endcomment %}
+
+    <!-- FOOTER -->
+    {% include 'app/footer.html' %}
+
+
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
+
+    <script>
+        $( document ).ready(function() {
+            $('a[id="blog"]').addClass('active');
+        });
+        
+        feather.replace({ 'aria-hidden': 'true' })
+
+        function topFunction() {
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<div class="modal fade panel-modal" tabindex="-1" id="presetModal">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="optionHead">Creating New Preset...</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger" role="alert" id="nevntAlert" hidden>Error: ...............</div>
+
+                <div class="panel-field panel-field-wide input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text justify-content-end">Name</span>
+                    </div>
+                    <input type="text" class="form-control" aria-label="label" autocomplete="off" value="" maxlength="100" minlength="1" id="presetName">
+                </div>
+
+                <div class="panel-field panel-field-wide input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text justify-content-end">Capacity Limit</span>
+                    </div>
+                    <input type="checkbox" data-toggle="toggle" data-onstyle="outline-primary" data-offstyle="outline-secondary" id="capToggle" autocomplete="off" data-width="100">
+                </div>
+
+                <div class="panel-field panel-field-wide input-group mb-0">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text justify-content-end">Split Capacity</span>
+                    </div>
+                    <input type="checkbox" data-toggle="toggle" data-onstyle="outline-primary" data-offstyle="outline-secondary" id="splitCapToggle" autocomplete="off" data-width="100">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="Create();" id="preCreate">Create</button>
+            </div>
+        </div>
+    </div>
+</div>

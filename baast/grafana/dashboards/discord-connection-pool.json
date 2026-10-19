@@ -1,0 +1,232 @@
+{
+  "id": null,
+  "title": "Discord Connection Pool Monitoring",
+  "tags": ["discord", "connection-pool", "monitoring"],
+  "style": "dark",
+  "timezone": "browser",
+  "panels": [
+      {
+        "id": 1,
+        "title": "Connection Pool Size",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "discord_connection_pool_size",
+            "legendFormat": "Current Pool Size"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 8},
+                {"color": "red", "value": 9}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Pool Utilization",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "discord_connection_pool_utilization_ratio * 100",
+            "legendFormat": "Utilization %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 80},
+                {"color": "red", "value": 90}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Health Score",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "discord_connection_pool_health_score",
+            "legendFormat": "Health Score"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 60},
+                {"color": "green", "value": 80}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Connection Creation Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(discord_connection_pool_connections_created_total[5m])",
+            "legendFormat": "{{connection_type}} connections/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Connection Reuse Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(discord_connection_pool_connections_reused_total[5m])",
+            "legendFormat": "Reused connections/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "Connection Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(discord_connection_pool_connection_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(discord_connection_pool_connection_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(discord_connection_pool_connection_duration_seconds_bucket[5m]))",
+            "legendFormat": "99th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Connection Creation Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(discord_connection_pool_connection_creation_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(discord_connection_pool_connection_creation_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 8,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(discord_connection_pool_errors_total[5m])",
+            "legendFormat": "{{error_type}} errors/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 9,
+        "title": "Cleanup Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(discord_connection_pool_cleanup_operations_total[5m])",
+            "legendFormat": "Cleanup operations/sec"
+          },
+          {
+            "expr": "rate(discord_connection_pool_cleanup_connections_removed_total[5m])",
+            "legendFormat": "Connections removed/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 10,
+        "title": "Discord API Requests",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(discord_api_requests_total[5m])",
+            "legendFormat": "{{endpoint}} ({{status_code}})"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32}
+      },
+      {
+        "id": 11,
+        "title": "Discord API Request Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(discord_api_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(discord_api_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32}
+      },
+      {
+        "id": 12,
+        "title": "Authentication Sessions",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "discord_auth_sessions_valid",
+            "legendFormat": "Valid Sessions"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 40}
+      },
+      {
+        "id": 13,
+        "title": "Session Expiration Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(discord_auth_sessions_expired_total[5m])",
+            "legendFormat": "Expired sessions/sec"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 40}
+      }
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refresh": "30s"
+}

@@ -1,0 +1,70 @@
+<script>
+    (function () {
+        if (window.__baastFaroInitialized) {
+            return;
+        }
+        window.__baastFaroInitialized = true;
+
+        var SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+        // Outbound CTAs (Discord OAuth, etc.) — pushEvent then navigate after Faro flushes.
+        window.baastTrackOutboundClick = function (event, eventName, attributes) {
+            if (!event || !event.currentTarget) {
+                return;
+            }
+
+            var link = event.currentTarget;
+            var href = link.getAttribute('href');
+            if (!href) {
+                return;
+            }
+
+            event.preventDefault();
+
+            if (window.faro && window.faro.api) {
+                window.faro.api.pushEvent(eventName, attributes || {});
+            }
+
+            var target = link.getAttribute('target');
+            window.setTimeout(function () {
+                if (target === '_blank') {
+                    window.open(href, '_blank', 'noopener,noreferrer');
+                } else {
+                    window.location.href = href;
+                }
+            }, 250);
+        };
+
+        var script = document.createElement('script');
+        script.onload = function () {
+            window.GrafanaFaroWebSdk.initializeFaro({
+                url: window.location.origin + '/collect',
+                app: {
+                    name: 'baast-frontend',
+                    version: '1.0.0',
+                },
+                batching: {
+                    enabled: true,
+                    itemLimit: 1,
+                    sendTimeout: 250,
+                },
+                sessionTracking: {
+                    enabled: true,
+                    persistent: true,
+                    maxSessionPersistenceTime: SESSION_TTL_MS,
+                },
+                pageTracking: {
+                    generatePageId: function (location) {
+                        var path = location.pathname || '/';
+                        if (path.length > 1 && path.endsWith('/')) {
+                            path = path.slice(0, -1);
+                        }
+                        return path || '/';
+                    },
+                },
+            });
+        };
+        script.src = 'https://unpkg.com/@grafana/faro-web-sdk@^1.14.0/dist/bundle/faro-web-sdk.iife.js';
+        document.head.appendChild(script);
+    })();
+</script>

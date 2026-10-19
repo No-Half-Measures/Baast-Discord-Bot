@@ -1,0 +1,345 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>{% block title %}Baast{% endblock %}</title>
+    <meta name="description" content="The Ultimate Events Bot"/>
+    <meta name="url" content="https://baast.app/">
+    <link rel="icon" type="image/x-icon" href="{% static 'baast_icon.png' %}">
+
+    <meta property="og:title" content="Baast" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://baast.app/" />
+    <meta property="og:image" content="{% static 'baast_icon.png' %}" />
+    <meta property="og:description" content="The Ultimate Events Bot" />
+    <meta name="theme-color" content="#edbe49">
+
+    <!-- Include this to make the og:image larger -->
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,200&display=swap" rel="stylesheet"> 
+
+    <link href="{% static 'style.css' %}" rel="stylesheet" type="text/css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css" rel="stylesheet" type="text/css">
+
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+
+<body class="bg-blue">
+    {% comment %} <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="check" viewBox="0 0 16 16">
+        <title>Check</title>
+        <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+    </symbol>
+    </svg> {% endcomment %}
+
+    {% include 'app/header_menu.html' %}
+    <main>
+        <div class="container py-4">
+            <div class="p-3 pb-md-4 mx-auto text-center">
+                <h1 class="display-4 fw-normal">Pricing</h1>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class="inner d-flex tabsBtnHolder">
+                        <ul>
+                            <li><p id="yearly" class="active">Yearly</p></li>
+                            <li><p id="monthly" class="">Monthly</p></li>
+
+                            <li class="indicator"></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="row row-cols-2 justify-content-center mb-3 p-5">
+                <div class="col">
+                    <div class="card mb-4 rounded-3 shadow-sm border-gold">
+                    <div class="card-header py-3 px-5 text-white bg-gold border-gold">
+                        <h4 class="my-0 fw-normal">Plus</h4>
+                    </div>
+                    <div class="card-body bg-dark-blue text-white px-5">
+                        <h1 class="card-title pricing-card-title fw-bold fs-1 d-none monthlyPriceList">$5<small class="bs-secondary-color fw-light fs-6 d-inline-block lh-1" style="width:55px;">per month</small></h1>
+                        <h1 class="card-title pricing-card-title fw-bold fs-1 yearlyPriceList">$4.16<small class="bs-secondary-color fw-light fs-6 d-inline-block lh-1" style="width:55px;">per month</small></h1>
+                        <sub class="yearlyPriceList">$49.99 Billed Annually</sub>
+                        <sub class="d-none monthlyPriceList">Billed Monthly</sub>
+                        {% if user == 'none' %}
+                        <a type="button" class="w-100 btn btn-lg bg-gold mt-4" href="{% url "Discord-Login" %}">Login</a>
+                        {% else %}
+                            {% if guilds %}
+                            <div class="dropdown mt-3">
+                                <button class="form-select form-select-lg" type="button" id="guildDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span id="selectedGuildText">Select a guild</span>
+                                </button>
+                                <ul class="dropdown-menu w-100" aria-labelledby="guildDropdown">
+                                    {% for g in guilds%}
+                                        {% if not g.is_premium or g.stripeSubscriptionId in subscriptions %}
+                                        <li><a class="dropdown-item d-flex align-items-center" href="#" data-value="{{g.id}}">
+                                            <img class="rounded-circle me-2" src="{{g.icon}}" style="height:32px; width:32px; object-fit:cover;">
+                                            <span>{{g.name}}</span>
+                                            {% if g.is_premium and g.stripeSubscriptionId in subscriptions and not g.sub_cancelled %}
+                                            <button type="button" class="btn btn-danger ms-auto" id="cancelSubscription"
+                                            style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+                                            Cancel Subscription
+                                            </button>
+                                            {% elif g.is_premium and g.stripeSubscriptionId in subscriptions and g.sub_cancelled %}
+                                            <button type="button" class="btn btn-warning ms-auto"
+                                            style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+                                            Subscription Cancelled
+                                            </button>
+                                            {% endif %} 
+                                        </a></li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                                <input type="hidden" id="selectedGuildId" name="guild_id" value="" autocomplete="off">
+                            </div>
+                            {% endif %}
+                        <a type="button" class="w-100 btn btn-lg bg-gold mt-2 bcheckout disabled" disabled>Subscribe</a>
+                        {% endif %}
+                        <ul class="list-unstyled mt-3 mb-4">
+                            <li class="">1 Server</li>
+                            <li class="pt-1"><i class="bi bi-check-circle-fill pe-1"></i> All of <b>Free</b> Features and:</li>
+                            <li class="pt-1"><i class="bi bi-check-circle-fill pe-1"></i> Copying Events</li>
+                            <li class="pt-1"><i class="bi bi-check-circle-fill pe-1"></i> Restore prematurely deleted Events</li>
+                            <li class="pt-1"><i class="bi bi-check-circle-fill pe-1"></i> Configurable Clean-up Times</small></li>
+                            {% comment %} <li>Unlimited Google Calendar Sync</li> {% endcomment %}
+                            <li class="pt-1"><i class="bi bi-check-circle-fill pe-1"></i> Google Sheets Integration</li>
+                        </ul>
+                    </div>
+                    </div>
+                </div>
+            </div>
+            {% if user.stripeCustomerId %}
+            <div class="row">
+                <div class="col-12">
+                    <form class="inner d-flex" method="POST" action="/manage-subscription">
+                        {% csrf_token %}
+                        <button type="submit" class="w-40 btn btn-lg bg-gold mx-auto trio bcheckout">Manage Subscriptions</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="py-5" id="features">
+            <div class="container">
+                <h2 class="display-6 text-center mb-4">Features</h2>
+                <div class="table-responsive">
+                    <table class="dataTable-table table text-center table-striped table-hover table-dark">
+                        <thead class="bg-blue">
+                        <tr>
+                            <th style="width: 40%;">Feature</th>
+                            <th style="width: 30%;">Free</th>
+                            <th style="width: 30%;">Plus</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th scope="row" class="text-start">Create, Edit, Delete</th>
+                                <td><span data-feather="check-circle"></span></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Copy</th>
+                                <td></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Restore</th>
+                                <td></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Recurring Events</th>
+                                <td>2</td>
+                                <td>Unlimited</td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Thumb Images</th>
+                                <td><span data-feather="check-circle"></span></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Custom Colors</th>
+                                <td><span data-feather="check-circle"></span></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Shared Events</th>
+                                <td></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Custom signup options</th>
+                                <td></td>
+                                <td><small class="bs-secondary-color fw-light"><span data-feather="check-circle"></span></small></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Automatic Reminders</th>
+                                <td><span data-feather="check-circle"></span></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Custom Reminders</th>
+                                <td></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Auto Clean up</th>
+                                <td><small class="bs-secondary-color fw-light">1hr after the event</small></td>
+                                <td><small class="bs-secondary-color fw-light">Configurable</small></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Google Sheets integration</th>
+                                <td></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Custom Sheet Support</th>
+                                <td></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Google Calendar Sync</th>
+                                <td><span data-feather="check-circle"></span></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-start">Web Panel</th>
+                                <td><span data-feather="check-circle"></span></td>
+                                <td><span data-feather="check-circle"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    {% include 'app/footer.html' %}
+
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.1/dist/js.cookie.min.js"></script>
+
+    <script>
+        csrftoken = Cookies.get('csrftoken');
+
+        $( document ).ready(function() {
+            feather.replace({ 'aria-hidden': 'true' })
+
+            $('a[id="pricing"]').addClass('active');
+
+            // Custom dropdown functionality
+            $('.dropdown-item').click(function(e) {
+                e.preventDefault();
+                var guildId = $(this).data('value');
+                var guildName = $(this).find('span').text();
+                var guildIcon = $(this).find('img').attr('src');
+                
+                $('#selectedGuildId').val(guildId);
+                $('#selectedGuildText').html('<img class="rounded-circle me-2" src="' + guildIcon + '" style="height:24px; width:24px; object-fit:cover;"><span>' + guildName + '</span>');
+                
+                // Enable the subscribe button
+                $('.bcheckout').removeClass('disabled');
+                $('.bcheckout').removeAttr('disabled');
+            });
+
+            $("#monthly").click(function(){
+                $(this).addClass('active');
+                $("#yearly").removeClass('active')
+
+                $(".monthlyPriceList").removeClass('d-none');
+                $(".monthlyPriceList").addClass('fadeIn');
+                $(".yearlyPriceList").addClass('d-none');
+
+                $(".indicator").css("left","163px");
+            });
+
+            $("#yearly").click(function(){
+                $(this).addClass('active');
+                $("#monthly").removeClass('active');
+
+                $(".yearlyPriceList").removeClass('d-none');
+                $(".yearlyPriceList").addClass('fadeIn');
+                $(".monthlyPriceList").addClass('d-none');
+
+                $(".indicator").css("left","2px");
+            });
+
+
+            $(".bcheckout").click(function(){
+                var serializedData = $(this).serialize();
+                url = "{% url 'events:ccs' %}"
+
+                guild_id = $('#selectedGuildId').val();
+                if (guild_id == '') {
+                    return;
+                }
+
+                serializedData += 'guild_id=' + guild_id;
+                serializedData += '&yearly=' + $('#yearly').hasClass( "active" );
+                
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'GET',
+                    url: url,
+                    dataType: "json",
+                    data: serializedData,
+                    success: function (response) {
+                        location.href = response['url']
+                    },
+                    error: function (response) {
+                        // alert the error if any error occured
+                        console.log('ERROR:' + response.responseJSON.error);
+                    }
+                });
+            });
+
+            $("button[id='cancelSubscription']").click(function(event ){
+                event.stopPropagation();
+
+                var serializedData = $(this).serialize();
+                url = "{% url 'events:cancel_sub' %}"
+
+                serializedData += 'guild_id=' + $(this).parent().data('value');
+
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'GET',
+                    url: url,
+                    dataType: "json",
+                    data: serializedData,
+                    success: function (response) {
+                        location.href = response['url']
+                    },
+                    error: function (response) {
+                        // alert the error if any error occured
+                        console.log('ERROR:' + response.responseJSON.error);
+                    }
+                });
+            });
+        });
+
+        
+
+        
+
+    </script>
+</body>
+</html>

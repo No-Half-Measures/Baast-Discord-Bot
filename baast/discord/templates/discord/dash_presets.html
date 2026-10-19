@@ -1,0 +1,164 @@
+{% extends "discord/dash_base.html" %} 
+{% load static %}
+{% block title %}Option Preset List{% endblock %}
+{% block nav_title %}Presets{% endblock %}
+{% block content %}
+{% if nav_data.conf.is_premium %}
+    {% include "discord/dash_confirm_modal.html" %}
+    {% include "discord/dash_preset_modal.html" %}
+{% else %}
+    <div class="alert alert-warning mt-4" role="alert">
+        This feature is only available to Premium Guilds. <a href="{% url 'events:pricing' %}">Upgrade</a>
+    </div>
+{% endif %}
+
+    <div id="alert" class="alert alert-warning mt-4" role="alert" hidden>
+        <p id="alertText">ERROR TEXT</p>
+    </div>
+
+    <div class="card card-raised gx-4 mt-4 mb-5">
+        <div class="card-body p-0">
+            <div class="dataTable-wrapper dataTable-loading no-footer sortable searchable fixed-columns">
+                <div class="dataTable-container">
+                    <table id="datatablesSimple" class="dataTable-table table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th data-sortable="" style="width: 20%;"><a href="#" class="dataTable-sorter">Name</a></th>
+                                <th class="nomob" data-sortable="" style="width: 40%;"><a href="#" class="dataTable-sorter">Labels...</a></th>
+                                <th class="nomob" data-sortable="" style="width: 20%;"><a href="#" class="dataTable-sorter">Capacity Enabled</a></th>
+                                <th class="nomob" data-sortable="" style="width: 20%;"><a href="#" class="dataTable-sorter">Split Capacity Enabled</a></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for preset in presets%}
+                                <tr id="preset-{{preset.id}}" onclick="if (!event.target.closest('.pDelete')) { window.location.href = '/panel/{{nav_data.hash}}/preset/{{preset.id}}'; }">
+                                    <td>{{preset.name}}</td>
+                                    <td class="nomob">{{preset.to_html | safe}}</td>
+                                    <td class="nomob">{% if preset.use_capacity %}<span class="badge bg-success">{% else %}<span class="badge bg-danger">{% endif %}{{ preset.use_capacity }}</span></td>
+                                    <td class="nomob">{% if preset.split_capacity %}<span class="badge bg-success">{% else %}<span class="badge bg-danger">{% endif %}{{ preset.split_capacity }}</span></td>
+                                    <td class="">
+                                        {% with preset_guild=preset.gid.guild|stringformat:"i" this_guild=nav_data.conf.guild|stringformat:"i" baast_guild="MAIN_GUILD_ID" %}
+                                        {% if preset_guild == baast_guild and this_guild == baast_guild or preset_guild != baast_guild%}
+                                        <button type="button" class="btn btn-primary pt-0 pDelete" data-id="{{preset.id}}"><span data-feather="trash"></span></button>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            {% if nav_data.conf.is_premium %}
+                            <tr >
+                                <td><button type="button" class="btn btn-success pt-0" onclick="ShowPresetModal();"><span data-feather="plus-square"></span></button></td>
+                            </tr>
+                            {% endif %}
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+{% block js%}
+{% if nav_data.conf.is_premium %}
+    <script>
+        $( document ).ready(function() {
+            $('a[id="options"]').addClass('active');
+        });
+
+        $(document).on('click', '.pDelete', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            let id = $(this).data('id');
+            $("#confirm").attr("onclick", `Delete(${id});`)
+
+            var eventModal = document.getElementById('confirmModal');
+            var modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+            modal.show();
+        });
+
+        function ShowPresetModal () {
+            const presetModal = document.getElementById('presetModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(presetModal);
+            
+            $('#presetName').val("New Preset");
+            
+            $('#capToggle').bootstrapToggle("on", true);
+            $('#splitCapToggle').bootstrapToggle("off", true);
+            modal.show();
+        };
+
+        function Create() {
+            $('#preCreate').attr('disabled', true);
+
+            let name = $('#presetName').val();
+            let capToggle = $('#capToggle').prop('checked');
+            let splitCapToggle = $('#splitCapToggle').prop('checked');
+
+            let data = {
+                name: name,
+                capToggle: capToggle,
+                splitCapToggle: splitCapToggle
+            };
+            
+            let serializedData = $.param(data);
+            let url = "{% url 'discord:dash_preset_new' nav_data.hash %}";
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    const presetModal = document.getElementById('presetModal');
+                    const modal = bootstrap.Modal.getOrCreateInstance(presetModal);
+                    modal.hide();
+                    
+                    window.location.replace('/panel/{{nav_data.hash}}/preset/' + response.id)
+                },
+                error: function (response) {
+                    console.log('ERROR:' + response.responseJSON.error);
+                    $('#preCreate').removeAttr('disabled');
+                }
+            })
+        }
+
+        function Delete(id) {
+            const confirmModal = document.getElementById('confirmModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(confirmModal);
+            modal.hide();
+
+            $("#confirm").attr("onclick", ``)
+
+            let url = "{% url 'discord:dash_preset_del' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', id);
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                success: function (response) {
+                    let $option = $(`#preset-${id}`);
+                    $option.remove();
+                },
+                error: function (response) {
+                    console.log('ERROR:' + response.responseJSON.error);
+                    $('#alert').prop('hidden', false).text(response.responseJSON.error);
+                    $('#alert').addClass('alert-danger');
+                    $('#alert').removeClass('alert-warning');
+                }
+            })
+        }
+    </script>
+{% else %}
+    <script>
+        $( document ).ready(function() {
+            $('a[id="presets"]').addClass('active');
+        });
+    </script>
+{% endif %}
+{% endblock %}

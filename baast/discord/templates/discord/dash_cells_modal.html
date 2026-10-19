@@ -1,0 +1,19 @@
+<div class="modal fade panel-modal" tabindex="-1" id="cellsModal">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalHead">Edit Cells</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger" role="alert" id="ntempAlert" hidden>Error: ...............</div>
+                <div id="modal-inputs">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="SaveCells('{{nav_data.hash}}, optionsID')" id="cellsSave">Save</button>
+            </div>
+        </div>
+    </div>
+</div>

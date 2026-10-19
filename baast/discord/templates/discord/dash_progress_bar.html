@@ -1,0 +1,114 @@
+{% load static %}
+
+<div id="pageProgressBar" class="progress position-fixed top-0 start-0 w-100">
+    <div id="progressBarFill" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+</div>
+
+<script>
+let progressBar = null;
+let progressContainer = null;
+let progressInterval = null;
+let currentProgress = 0;
+let isProgressRunning = false;
+
+const loadDuration = 3000;
+const maxProgress = 95;
+const updateInterval = 50;
+
+document.addEventListener('DOMContentLoaded', function() {
+    progressBar = document.getElementById('progressBarFill');
+    progressContainer = document.getElementById('pageProgressBar');
+
+    if (!progressBar || !progressContainer) {
+        console.error('Progress bar elements not found');
+        return;
+    }
+
+    progressContainer.style.display = 'none';
+    progressContainer.style.opacity = '0';
+    progressBar.style.width = '0%';
+    progressBar.setAttribute('aria-valuenow', 0);
+});
+
+function startProgressBar(duration = loadDuration) {
+    if (isProgressRunning) {
+        console.warn('Progress bar is already running');
+        return;
+    }
+
+    if (!progressBar || !progressContainer) {
+        console.error('Progress bar elements not found');
+        return;
+    }
+
+    currentProgress = 0;
+    isProgressRunning = true;
+
+    progressContainer.style.display = 'block';
+    progressContainer.style.opacity = '1';
+    progressBar.style.width = '0%';
+    progressBar.setAttribute('aria-valuenow', 0);
+
+    progressContainer.offsetHeight;
+
+    const progressIncrement = (maxProgress / (duration / updateInterval));
+
+    progressInterval = setInterval(function() {
+        currentProgress += progressIncrement;
+
+        if (currentProgress >= maxProgress) {
+            currentProgress = maxProgress;
+            stopProgressBar();
+        }
+
+        progressBar.style.width = currentProgress + '%';
+        progressBar.setAttribute('aria-valuenow', Math.round(currentProgress));
+        progressBar.offsetWidth;
+    }, updateInterval);
+}
+
+function stopProgressBar() {
+    if (!isProgressRunning) {
+        return;
+    }
+
+    isProgressRunning = false;
+
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+
+    if (progressContainer) {
+        progressContainer.style.opacity = '0';
+        progressContainer.style.transition = 'opacity 0.5s ease';
+        setTimeout(function() {
+            progressContainer.style.display = 'none';
+        }, 500);
+    }
+}
+
+function resetProgressBar() {
+    stopProgressBar();
+    currentProgress = 0;
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', 0);
+    }
+}
+
+function setProgressBar(percentage) {
+    if (!progressBar) return;
+
+    const clampedPercentage = Math.min(Math.max(percentage, 0), maxProgress);
+    currentProgress = clampedPercentage;
+
+    progressBar.style.width = clampedPercentage + '%';
+    progressBar.setAttribute('aria-valuenow', Math.round(clampedPercentage));
+
+    if (progressContainer && progressContainer.style.display === 'none') {
+        progressContainer.style.display = 'block';
+        progressContainer.style.opacity = '1';
+    }
+}
+</script>

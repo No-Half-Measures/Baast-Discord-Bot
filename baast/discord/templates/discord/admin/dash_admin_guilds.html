@@ -1,0 +1,176 @@
+{% extends "discord/dash_base.html" %} 
+{% load static %}
+{% block title %}Overview{% endblock %}
+{% block content %}	
+    <div class="row gx-4 pt-4 px-auto">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="card card-raised bg-gold text-white">
+                <div class="card-body px-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="me-2">
+                            <div class="display-5 text-white">{{active_guilds|stringformat:"i"}}</div>
+                            <div class="card-text">Active Guilds</div>
+                        </div>
+                        <div class="icon-circle bg-white-50 "><span data-feather="calendar"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="card card-raised bg-light-gold text-white">
+                <div class="card-body px-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="me-2">
+                            <div class="display-5 text-white">{{inactive_guilds|stringformat:"i"}}</div>
+                            <div class="card-text">Inactive Guilds</div>
+                        </div>
+                        <div class="icon-circle bg-white-50 text-white"><span data-feather="bell"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="card card-raised bg-gold text-white">
+                <div class="card-body px-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="me-2">
+                            <div class="display-5 text-white">{{premium_guilds|stringformat:"i"}}</div>
+                            <div class="card-text">Premium Guilds</div>
+                        </div>
+                        <div class="icon-circle bg-white-50 text-white"><span data-feather="alert-circle"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card card-raised">
+        <div class="card-header bg-blue px-4 text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="me-4">
+                    <h2 class="card-title mb-0">Guilds</h2>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Simple DataTables example-->
+            <div class="dataTable-wrapper dataTable-loading no-footer sortable searchable fixed-columns">
+                <div class="dataTable-container">
+                    <table id="datatablesSimple" class="dataTable-table table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th data-sortable="" style="width: 20%;"><a href="#" class="dataTable-sorter">Guild</a></th>
+                                <th data-sortable="" style="width: 20%;"><a href="#" class="dataTable-sorter">ID</a></th>
+                                <th class="nomob" data-sortable="" style="width: 10%;"><a href="#" class="dataTable-sorter">Events</a></th>
+                                <th class="nomob" data-sortable="" style="width: 10%;"><a href="#" class="dataTable-sorter">Members</a></th>
+                                <th data-sortable="" style="width: 10%;"><a href="#" class="dataTable-sorter">Premium</a></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for g in nav_data.nav_guilds %}
+                                <tr onclick="FetchGuild('{{g.hash}}');"><td><img src={{g.icon}} alt="" width="32" height="32" class="rounded-circle me-2"> {{g.name}}</td><td>{{g.id}}</td><td class="nomob">{{g.event_count}}</td><td class="nomob">{{g.member_count}}</td><td>{{g.is_premium}}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% if guilds|length > 10 %}
+            <div class="dataTable-bottom"><div class="dataTable-info">Showing 1 to 10 of 100 entries</div><nav class="dataTable-pagination"><ul class="dataTable-pagination-list"><li class="active"><a href="#" data-page="1">1</a></li><li class=""><a href="#" data-page="2">2</a></li><li class=""><a href="#" data-page="3">3</a></li><li class=""><a href="#" data-page="4">4</a></li><li class=""><a href="#" data-page="5">5</a></li><li class=""><a href="#" data-page="6">6</a></li><li class=""><a href="#" data-page="7">7</a></li><li class="ellipsis"><a href="#">…</a></li><li class=""><a href="#" data-page="10">10</a></li><li class="pager"><a href="#" data-page="2">›</a></li></ul></nav></div></div>
+            {% endif %}
+        </div>
+    </div>
+    {% include "discord/admin/dash_guild_modal.html" %}
+{% endblock %}
+{% block js%}
+    <script>
+        $( document ).ready(function() {
+            $('a[id="aguilds"]').addClass('active');
+        });
+
+
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+        
+        now = new Date()
+        const tempusDate = new tempusDominus.TempusDominus(document.getElementById('premiumExpireTime'), {
+            display: {
+                viewMode: 'calendar',
+                components: {
+                    decades: true,
+                    year: true,
+                    month: true,
+                    date: true,
+                    hours: false,
+                    minutes: false,
+                    seconds: false,
+                },
+            }
+        });
+
+
+        function FetchGuild (guild) {
+            // serialize the data for sending the form data.
+            var serializedData = $(this).serialize();
+
+            url = "{% url 'discord:a_guild' 'PLACEHOLDER' %}".replace('PLACEHOLDER', guild)
+            // make POST ajax call
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'GET',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    var modalelement = document.getElementById('guildModal');
+                    var modal = bootstrap.Modal.getOrCreateInstance(modalelement);
+                    modal.show();
+
+                    var gDate = new Date(response['expire_date'])
+
+                    $('#nameHead').text(response['name'])
+                    $('#idHead').text(response['id'])
+                    
+                    parseTime = tempusDate.dates.parseInput(gDate)
+                    tempusDate.dates.setValue(parseTime)
+
+                    $('#gSave').attr('onclick', 'GuildSave("' + guild + '");')
+                },
+                error: function (response) {
+                    // alert the error if any error occured
+                    console.log('ERROR:' + response.responseJSON.error);
+                }
+            })
+        };
+
+        function GuildSave (guild) {
+            // serialize the data for sending the form data.
+            var serializedData = $(this).serialize();
+
+            date =  tempusDate.viewDate;
+            tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            serializedData += '&expire_date=' + date.getUTCDate() + '/'+ (date.getUTCMonth()+1) + '/'+ date.getUTCFullYear();
+
+            url = "{% url 'discord:a_guild' 'PLACEHOLDER' %}".replace('PLACEHOLDER', guild)
+            // make POST ajax call
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    var eventModal = document.getElementById('guildModal');
+                    var modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+                    modal.hide();
+                },
+                error: function (response) {
+                    // alert the error if any error occured
+                    console.log('ERROR:' + response.responseJSON.error);
+                }
+            })
+        };
+    </script>
+{% endblock %}

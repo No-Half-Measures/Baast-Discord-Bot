@@ -1,0 +1,733 @@
+{% extends "discord/dash_base.html" %} 
+{% load cache %}
+{% load static %}
+{% load listfilters %}
+{% cache 600 title %}
+{% block title %}Events{% endblock %}
+{% block nav_title %}Events{% endblock %}
+{% endcache %}
+{% block content %}
+{% if nav_data.conf.is_premium == False %}
+{% include "discord/dash_premium_modal.html" %}
+{% endif %}
+
+{% include "discord/dash_event_modal.html" %}
+{% include "discord/dash_progress_bar.html" %}
+{% include "discord/dash_confirm_modal.html" %}
+
+    <div class="events-toolbar">
+        <button type="button" class="btn btn-create-event evNew" title="Create New Event">
+            <span data-feather="plus"></span> Create Event
+        </button>
+    </div>
+
+    <div class="row events-grid row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 mb-4">
+        {% for event in events %}
+        <div class="col">
+            <article class="card card-raised event-card" id="event-{{event.id}}">
+                <div class="card-header event-card-header{% if event.isMarkedDelete %} event-card-header--deleted{% endif %}">
+                    <div class="event-card-toolbar">
+                        <button type="button" class="event-card-action event-card-action--copy evCopy"
+                            data-id="{{event.id}}" data-title="{{event.title}}" data-description="{{event.description}}"
+                            data-template="{{event.template.id}}" data-option="{{event.option_preset.id}}" data-roleset="{{event.roleset.id}}"
+                            data-image="{{event.image}}" data-date="{{event.date_str}}" data-tz="{{event.tz}}" data-capacity="{{event.capacity}}"
+                            data-channel="{{event.channel}}" data-color="{{event.color}}" data-rec-interval="{{event.recurring_interval}}"
+                            data-rec-until="{{event.recurring_until_str}}" aria-label="Copy event">
+                            <span data-feather="copy"></span>
+                        </button>
+                        <a class="event-card-title" href="/panel/{{nav_data.hash}}/event/{{event.id}}">
+                            <h5 class="card-title">{{event.title|linebreaksbr}}{% if event.isMarkedDelete %} <abbr title="This Event Is Marked to be Deleted" class="initialism">?</abbr>{% endif %}</h5>
+                        </a>
+                        {% if event.isMarkedDelete %}
+                        <button data-id="{{event.id}}" type="button" class="event-card-action event-card-action--restore evRestore" aria-label="Restore event">
+                            <span data-feather="rotate-ccw"></span>
+                        </button>
+                        {% else %}
+                        <button data-id="{{event.id}}" type="button" class="event-card-action event-card-action--delete evDelete" aria-label="Delete event">
+                            <span data-feather="trash-2"></span>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if event.image != None %}
+                <img class="event-card-img" src="{{event.image}}" alt="">
+                {% endif %}
+                <a class="event-card-body" href="/panel/{{nav_data.hash}}/event/{{event.id}}">
+                    <blockquote class="blockquote mb-2">
+                    {% if event.description != 'None' %}
+                    {{event.description|linebreaksbr}}
+                    {% else %}
+                    No description.
+                    {% endif %}
+                    </blockquote>
+                    <figcaption class="blockquote-footer">
+                        Created by <cite title="{{event.author}}">{{event.author_name}}</cite>
+                    </figcaption>
+
+                    <hr class="my-3">
+                    <p class="hstack event-card-meta">
+                        Template:
+                        <small class="bs-secondary-color ms-auto">{{event.template.name}}</small>
+                    </p>
+                    <p class="hstack event-card-meta">
+                        Option Preset:
+                        <small class="bs-secondary-color ms-auto">{{event.option_preset.name}}</small>
+                    </p>
+                    <p class="hstack event-card-meta mb-0">
+                        Recurring:
+                        <small class="bs-secondary-color ms-auto">{{event.recurring}}</small>
+                    </p>
+                </a>
+                <div class="card-footer event-card-footer">
+                    <small class="d-inline"><img src="{{event.template.thumb_url}}" class="rounded event-card-thumb" alt=""> {{event.template.name}}</small>
+                    <small class="bs-secondary-color float-end">{{event.date_str}} | {{event.tz}}</small>
+                </div>
+            </article>
+        </div>
+        {% endfor %}
+
+        {% for event in linked_events %}
+        <div class="col">
+            <a href="/panel/{{nav_data.hash}}/event/{{event.id}}/linked/" class="event-card--linked">
+                <article class="card card-raised event-card">
+                    <div class="card-header event-card-header{% if event.isMarkedDelete %} event-card-header--deleted{% endif %}">
+                        <div class="event-card-toolbar">
+                            <span class="event-card-action event-card-action--copy" aria-hidden="true">
+                                <span data-feather="copy"></span>
+                            </span>
+                            <span class="event-card-title">
+                                <h5 class="card-title">{{event.title}}</h5>
+                            </span>
+                            <span class="event-card-action event-card-action--delete" aria-hidden="true">
+                                <span data-feather="trash-2"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <img class="event-card-img" src="https://www.w3schools.com/bootstrap5/img_avatar3.png" alt="">
+                    <div class="event-card-body">
+                        {% if event.description != 'None' %}
+                        {{event.description_repr}}
+                        {% else %}
+                        No description.
+                        {% endif %}
+                    </div>
+                    <div class="card-footer event-card-footer">
+                        <small class="d-inline"><img src="{{event.template.thumb_url}}" class="rounded event-card-thumb" alt=""> {{event.template.name}}</small>
+                        <small class="bs-secondary-color float-end">{{event.date_str}}</small>
+                    </div>
+                </article>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+{% block js%}
+    <script>
+        now = new Date();
+        const _newTDateTime = new tempusDominus.TempusDominus(document.getElementById('neDateTime'), {
+			display: {
+                sideBySide: true
+            },
+            restrictions: {
+                minDate: now
+            }
+        });
+
+        const _tRecDate = new tempusDominus.TempusDominus(document.getElementById('neRecDate'), {
+            localization: {
+                format: 'dd/MM/yyyy',
+            },
+            display: {
+                sideBySide: false,
+                viewMode: 'calendar',
+                components: {
+                    calendar: true,
+                    date: true,
+                    month: true,
+                    year: true,
+                    decades: true,
+                    clock: false,
+                    hours: false,
+                    minutes: false,
+                    seconds: false,
+                },
+            },
+            restrictions: {
+                minDate: now
+            },
+            viewDate: now,
+        });
+
+        $(document).ready(function () {
+            $('a[id="events"]').addClass('active');
+
+            // Update hex input value when color picker changes
+            $('#necolorPicker').on('input', function(e) {
+                $('#nehexInput').val($('#necolorPicker').val());
+            });
+        
+            // Update color picker value when hex input changes
+            $('#nehexInput').on('input', function(e) {
+                const hexValue = $('#nehexInput').val();
+                if (/^#([0-9A-F]{3}){1,2}$/i.test(hexValue)) {
+                    $('#necolorPicker').val(hexValue);
+                }
+            });
+
+            $('#neRecEndless').change(function() {
+                if($(this).is(':checked')) {
+                    // Endless is checked - disable the date picker
+                    $('#neRecDate').prop('disabled', true);
+                    $('#neRecDate').val('');
+                } else {
+                    // Endless is unchecked - enable the date picker
+                    $('#neRecDate').prop('disabled', false);
+                    
+                    // If there's a stored date, set it, otherwise use current date
+                    _tRecDate.dates.setValue(_tRecDate.dates.parseInput(now));
+                }
+            });
+
+
+            url = "{% url 'discord:get_templates' nav_data.hash %}";
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'GET',
+                url: url,
+                dataType: "json",
+                success: function (response) {
+                    var templates = response["templates"]
+                    $('#neTemplates').prop('disabled', false);
+                    
+                    for (index = 0; index < templates.length; index++) {
+                        $('#neTemplates').append( "<option value='" + templates[index]['id'] + "'>" + templates[index]['name'] + "</option>" );
+                    }
+                },
+                error: function(xhr, status, error) {
+                    // alert the error if any error occured
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+                }
+            });
+        });
+
+        $(document).ready(function () {
+            $('input[type="number"]').on('keyup', function()
+            {     
+                if ($(this).val() > $(this).attr('max')*1) 
+                {
+                    $(this).val($(this).attr('max'));
+                }
+                else if ($(this).val() < $(this).attr('min')*1)
+                {
+                    $(this).val($(this).attr('min'));
+                }
+            });
+
+            $('.evCopy').click(function() {
+                {% if nav_data.conf.is_premium == True %}
+                let id = $(this).data('id');
+                let title = $(this).data('title');
+                let description = $(this).data('description');
+                let color = $(this).data('color');
+                let capacity = $(this).data('capacity');
+                let template = $(this).data('template');
+                let roleset = $(this).data('roleset');
+                let option_preset = $(this).data('option');
+                let image = $(this).data('image');
+                let date = new Date($(this).data('date'));
+                let tz = $(this).data('tz');
+                let channel = $(this).data('channel');
+                let rec_interval = $(this).data('rec-interval');
+                let rec_until = $(this).data('rec-until');
+
+
+                var eventModal = document.getElementById('eventModal');
+                var modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+                modal.show();
+                
+                
+                $('#neTitle').val(title);
+                $('#neDescription').text(description);
+
+                $('#nehexInput').val(color).trigger("input");
+                
+                parseDateTime = _newTDateTime.dates.parseInput(date);
+                _newTDateTime.dates.setValue(parseDateTime);
+                
+                $('#neTimeZone').val(tz).change();
+                
+                $('#neTemplates').val(template).change();
+                setTimeout(function(){
+                    $('#neOptions').val(option_preset).change();
+
+                    setTimeout(function(){
+                        $('#neRoleset').val(roleset).change();
+                    }, 1000);
+                }, 1000);
+                
+                $('#neCapacity').val(capacity);
+                $('#neCapacity').attr('title', capacity);
+
+                $('#neChannels').val("'" + channel + "'").change();
+                $('#neChannels').val("'" + channel + "'").trigger("change");
+                $("#neChannels option[value='" + channel + "']").prop('selected', true);
+
+                $('#neRecInterval').val(rec_interval);
+                $('#neRecEndless').prop('checked', rec_until == "None");
+                if (rec_until != "None") {
+                    _tRecDate.dates.setValue(_tRecDate.dates.parseInput(rec_until));
+                }
+                
+
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl)
+                });
+                {% else %}
+                var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('premiumModal'));
+                modal.show();
+                {% endif %}
+            })
+
+            $('.evNew').click(function() {
+                var eventModal = document.getElementById('eventModal');
+                var modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+                modal.show();
+                
+                
+                $('#neTitle').val("");
+                $('#neDescription').text("");
+                
+                parseDateTime = _newTDateTime.dates.parseInput(now);
+                _newTDateTime.dates.setValue(parseDateTime);
+                
+                $('#neTimeZone').val(Intl.DateTimeFormat().resolvedOptions().timeZone).change();
+                
+                $('#neTemplates').val('Default');
+                
+                $('#neCapacity').val(1);
+                $('#neCapacity').attr('title', 1);
+
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl)
+                });
+            })
+
+
+            $(".evDelete").click(function () {
+                let id = $(this).data('id');
+                $("#m_confirm").attr("onclick", `EventDelete(${id});`)
+
+                var eventModal = document.getElementById('confirmModal');
+                var modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+                modal.show();
+            });
+
+            $(".evRestore").click(function () {
+                {% if nav_data.conf.is_premium == True %}
+                let id = $(this).data('id');
+                
+                $("#m_confirm")
+                    .attr("onclick", "")
+                    .off('click')
+                    .on('click', function() {
+                        var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmModal'));
+                        modal.hide();
+
+                        $('#m_confirm').text('Restore');
+                        $('#m_cancel').text('Cancel');
+                        
+                        $('#confirmModal .modal-title').text('Restoring Event');
+                        $('#confirmModal .modal-body p').text('');
+                        $('.template-options').hide();
+                        $('.mention-options').hide();
+                        $('.channels-options').hide();
+
+                        $('.restore-signups').show();
+                        $('.mention-options').show();
+                        $('.channels-options').show();
+
+                        $("#m_confirm")
+                            .off('click')
+                            .on('click', function() {
+                                EventRestore(id, true, $('#restoreSignups').is(':checked'), $('#reMention').val());
+                            });
+                        
+                        $("#cancel")
+                            .off('click')
+                            .on('click', function() {
+                                modal.hide();
+                            });
+                        
+                        setTimeout(() => modal.show(), 500);
+                    });
+
+                $("#cancel")
+                    .attr("onclick", "")
+                    .off('click')
+                    .on('click', function() {
+                        var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmModal'));
+                        modal.hide();
+
+                        $('#m_confirm').text('Restore');
+                        $('#m_cancel').text('Cancel');
+                        
+                        // Show template selection modal
+                        $('#confirmModal .modal-title').text('Select Templates');
+                        $('#confirmModal .modal-body p').text('Please select the templates to use:');
+                        $('.template-options').show();
+
+                        $('.mention-options').show();
+                        $('.channels-options').show();
+                        
+                        // Populate templates dropdown (reuse existing template loading logic)
+                        loadTemplates('#restoreTemplate');
+                        
+                        $("#m_confirm")
+                            .off('click')
+                            .on('click', function() {
+                                EventRestore(id, false, false,
+                                    $('#reMention').val(), {
+                                    template: $('#restoreTemplate').val(),
+                                    option: $('#restoreOption').val(),
+                                    roleset: $('#restoreRoleset').val()
+                                });
+                            });
+                        
+                        $("#cancel")
+                            .off('click')
+                            .on('click', function() {
+                                modal.hide();
+                            });
+                        
+                        setTimeout(() => modal.show(), 500);
+                    });
+                
+                $('#m_confirm').text('Yes');
+                $('#m_cancel').text('No');
+                
+                $('#confirmModal .modal-title').text('Reuse Previous Templates?');
+                $('#confirmModal .modal-body p').text('Would you like to reuse the previous templates and settings?\nThis will not restore the signups if you select No.');
+
+                $('.restore-signups').hide();
+                $('.template-options').hide();
+                $('.mention-options').hide();
+                $('.channels-options').hide();
+
+                $('#restoreSignups').prop('checked', true);
+
+                var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmModal'));
+                {% else %}
+                var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('premiumModal'));
+                {% endif %}
+                modal.show();
+            });
+            
+
+            $('#neTemplates').on("change", function() {
+                $('#neOptions').prop('disabled', true);
+
+                $('#neOptions').find('option').remove().end();
+
+                template =  $('#neTemplates').val();
+                
+                url = "{% url 'discord:get_options' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', template)
+                // make POST ajax call <str:template>/<str:hashguild>
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'GET',
+                    url: url,
+                    dataType: "json",
+                    data: '',
+                    success: function (response) {
+                        var options = response["options"]
+                        $('#neOptions').prop('disabled', false);
+
+                        for (index = 0; index < options.length; index++) {
+                            $('#neOptions').append( "<option value='" + options[index]['id'] + "' data-cap='" + options[index]['use_capacity'] + "'>" + options[index]['name'] + "</option>" );
+                        }
+                        
+                        setTimeout(function(){
+                            $('#neOptions').val('1').change();//.trigger("change");
+                        }, 100);
+                    },
+                    error: function(xhr, status, error) {
+                        // alert the error if any error occured
+                        let errorMessage = xhr.status + ': ' + xhr.statusText;
+                        console.log('Error - ' + errorMessage);
+                        console.log(status);
+                        console.log(error);
+                    }
+                });
+            });
+
+            $('#neOptions').on("change", function() {
+                val = $('#neOptions').find('option:selected').data('cap');
+                if (val == true) {
+                    $('#neCapacity').removeAttr('disabled');
+                } else {
+                    $('#neCapacity').prop('disabled', true);
+                }
+
+                option =  $('#neOptions').val();
+                $('#neRoleset').find('option').remove().end();
+
+                if (option) {
+                    url = "{% url 'discord:get_rolesets' nav_data.hash 'PLACEHOLDER'%}".replace('PLACEHOLDER', option)
+                    $.ajax({
+                        headers: {'X-CSRFToken': csrftoken},
+                        type: 'GET',
+                        url: url,
+                        dataType: "json",
+                        data: '',
+                        success: function (response) {
+                            var options = response["roleset"]
+
+                            if (options && options.length > 0) {
+                                $('#neRoleset').prop('disabled', false);
+
+                                for (index = 0; index < options.length; index++) {
+                                    $('#neRoleset').append( "<option value='" + options[index]['id'] + "'>" + options[index]['name'] + "</option>" );
+                                }
+                                
+                                setTimeout(function(){
+                                    $('#neRoleset').val('1').change();
+                                }, 100);
+                            }
+                            else {
+                                $('#neRoleset').prop('disabled', true);
+                                $('#neRoleset').find('option').remove().end();
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            // alert the error if any error occured
+                            let errorMessage = xhr.status + ': ' + xhr.statusText;
+                            console.log('Error - ' + errorMessage);
+                            console.log(status);
+                            console.log(error);
+                        }
+                    });
+                } else {
+                    $('#neRoleset').prop('disabled', true);
+                }
+            });
+
+
+            $('#neSave').click(function() {
+                var $this = $(this);
+                $this.attr('disabled', true);
+                startProgressBar(10000);
+            
+                // Gather form data using a more compact approach
+                var formData = {
+                    title: $('#neTitle').val(),
+                    desc: $('#neDescription').val(),
+                    cap: $('#neCapacity').val(),
+                    channel: $('#neChannels').val(),
+                    template: $('#neTemplates').val(),
+                    option: $('#neOptions').val(),
+                    roleset: $('#neRoleset').val(),
+                    color: $('#nehexInput').val(),
+                    date: _newTDateTime.viewDate.toISOString().split('T')[0], // format date as YYYY-MM-DD
+                    time: _newTDateTime.viewDate.toISOString().split('T')[1].substring(0, 5), // format time as HH:MM
+                    tz: $('#neTimeZone').val(),
+                    recurring_interval: $('#neRecInterval').val().toString(),
+                    recurring_until: $('#neRecEndless').is(':checked') ? 'null' : _tRecDate.viewDate.toISOString().split('T')[0],
+                    mentions: $('#neMention').val().toString(),
+                };
+            
+                // Convert the data into a query string
+                var serializedData = $.param(formData);
+            
+                // Update URL dynamically
+                var url = "{% url 'discord:dash_event' nav_data.hash -1 %}";
+            
+                // Make POST AJAX call
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'POST',
+                    url: url,
+                    dataType: 'json',
+                    data: serializedData,
+                    success: function(response) {
+                        var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal'));
+                        modal.hide();
+                        $this.removeAttr('disabled');
+                        stopProgressBar();
+                    },
+                    error: function(xhr) {
+                        console.error('Error - ' + xhr.status + ': ' + xhr.statusText);
+                        $('#nevntAlert').prop('hidden', false).text(xhr.statusText);
+                        $this.removeAttr('disabled');
+                        stopProgressBar();
+                    }
+                });
+            });            
+        });
+
+        function EventRestore(id, reuseTemplates, restoreSignups, mentions, newSettings = null) {
+            startProgressBar(10000);
+
+            var serializedData = {
+                reuseTemplates: reuseTemplates,
+                restoreSignups: restoreSignups,
+                mentions: mentions
+            };
+            
+            if (newSettings) {
+                serializedData = {...serializedData, ...newSettings};
+            }
+            
+            url = "{% url 'discord:event_restore' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', id);
+
+            mentions = $('#reMention').val().toString();
+            serializedData.mentions = mentions;
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    $('#confirmModal').find('.modal-body').prop('hidden', true);
+                    location.reload();
+                },
+                error: function(xhr) {
+                    console.error('Error - ' + xhr.status + ': ' + xhr.statusText);
+                    stopProgressBar();
+                }
+            });
+        }
+
+        // Helper function to load templates (reusing existing logic)
+        function loadTemplates(selectElement) {
+            $(selectElement).prop('disabled', true);
+            url = "{% url 'discord:get_templates' nav_data.hash %}";
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'GET',
+                url: url,
+                dataType: "json",
+                success: function (response) {
+                    var templates = response["templates"];
+                    $(selectElement).prop('disabled', false);
+                    
+                    for (index = 0; index < templates.length; index++) {
+                        $(selectElement).append(`<option value='${templates[index]['id']}'>${templates[index]['name']}</option>`);
+                    }
+                    
+                    // Trigger template change to load options
+                    $(selectElement).trigger('change');
+                },
+                error: function(xhr) {
+                    console.error('Error - ' + xhr.status + ': ' + xhr.statusText);
+                }
+            });
+        }
+
+        function EventDelete(id) {
+            // serialize the data for sending the form data.
+            var serializedData = $(this).serialize();
+            url = "{% url 'discord:event_del' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', id)
+            // make POST ajax call
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    var eventModal = document.getElementById('confirmModal');
+                    var modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+                    modal.hide();
+                    
+                    location.reload();
+                },
+                error: function(xhr) {
+                    console.error('Error - ' + xhr.status + ': ' + xhr.statusText);
+
+                    if (xhr.responseJSON.error) {
+                        $('#nevntAlert').prop('hidden', false).text(xhr.responseJSON.error);
+                    }
+
+                    if (xhr.responseJSON.redirect) {
+                        window.location.href = xhr.responseJSON.redirect;
+                    }
+                }
+            })
+        };
+
+        $('#restoreTemplate').on("change", function() {
+            $('#restoreOption').prop('disabled', true);
+
+            $('#restoreOption').find('option').remove().end();
+
+            template =  $('#restoreTemplate').val();
+            
+            url = "{% url 'discord:get_options' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', template)
+            
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'GET',
+                url: url,
+                dataType: "json",
+                data: '',
+                success: function (response) {
+                    var options = response["options"]
+                    $('#restoreOption').prop('disabled', false);
+
+                    for (index = 0; index < options.length; index++) {
+                        $('#restoreOption').append( "<option value='" + options[index]['id'] + "'>" + options[index]['name'] + "</option>" );
+                    }
+                    
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+                }
+            });
+        });
+
+        $('#restoreOption').on("change", function() {
+            $('#restoreRoleset').prop('disabled', true);
+
+            $('#restoreRoleset').find('option').remove().end();
+
+            options =  $('#restoreOption').val();
+            
+            url = "{% url 'discord:get_rolesets' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', options)
+            
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'GET',
+                url: url,
+                dataType: "json",
+                data: '',
+                success: function (response) {
+                    var roleset = response["roleset"]
+                    $('#restoreRoleset').prop('disabled', false);
+
+                    for (index = 0; index < roleset.length; index++) {
+                        $('#restoreRoleset').append( "<option value='" + roleset[index]['id'] + "'>" + roleset[index]['name'] + "</option>" );
+                    }
+                    
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+                }
+            });
+        });
+    </script>
+{% endblock %}

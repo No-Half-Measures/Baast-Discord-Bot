@@ -1,0 +1,67 @@
+<header class="sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark-blue">
+        <div class="container">
+            <h1 class="baast-brand text-cream fw-bold text-center m-0 me-4">
+                <a href="/" class="nav-link px-2">
+                    Baast
+                </a>
+            </h1>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav1">
+                <span class="navbar-toggler-icon">
+                </span>
+            </button>
+            <div class="collapse navbar-collapse" id="nav1">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" id="home" href="{% url 'events:index' %}">
+                            Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="blog" href="{% url 'events:blog_list' %}">
+                            Blog
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="pricing" href="{% url 'events:pricing' %}">
+                            Pricing
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://discord.baast.app">
+                            Support
+                        </a>
+                    </li>
+                    {% if request.user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link fw-bolder" href="{% url 'discord:dash_home' %}">
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'discord:dash_user' %}" class="d-block link-dark text-decoration-none ms-2">
+                            {% if user.avatar and user.avatar != 'none' %}
+                            <img src="{{ user.avatar }}" alt="" width="32" height="32" class="rounded-circle">
+                            {% else %}
+                            <img src="https://cdn.discordapp.com/embed/avatars/3.png" alt="" width="32" height="32" class="rounded-circle">
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="link-danger" href="/logout" aria-label="Sign-Out" data-bs-toggle="tooltip" data-bs-placement="top" title="Sign-Out">
+                            <span data-feather="log-out">
+                            </span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link fw-bolder" href="{% url 'Discord-Login' %}">
+                            Dashboard
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>

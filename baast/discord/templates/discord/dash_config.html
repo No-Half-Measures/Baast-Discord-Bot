@@ -1,0 +1,711 @@
+{% extends "discord/dash_base.html" %} 
+{% load static %}
+{% block title %}Config{% endblock %}
+{% block nav_title %}Config{% endblock %}
+{% block content %}	
+    <div class="row gx-4 pt-4">
+        <div class="col mb-2 ">
+            <div class="alert alert-danger" role="alert" id="alert" hidden>...</div>
+        </div>
+    </div>
+    <div class="row gx-4 pt-4">
+        <div class="col-lg-6">
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Plus
+                    <div class="card-subtitle mb-0">Plus Features.</div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="btn-group d-flex pb-2" role="group">
+                        <button type="button" class="btn btn-outline-secondary col-2" disabled>Status</button>
+                        <button type="button" class="btn btn-{% if nav_data.conf.is_premium %}success{% else %}danger{% endif %} col-6">{% if nav_data.conf.is_premium %}Active{% else %}Expired{% endif %}</button>
+                    </div>
+                    {% if nav_data.conf.is_premium %}
+                    <div class="input-group mb-2 mt-2">
+                        <input type="text" class="form-control" placeholder="Worksheet" id="main_ws" value="https://docs.google.com/spreadsheets/d/{{nav_data.conf.p_sheetid}}" autocomplete="off" {% if not nav_data.conf.is_premium %}disabled{% endif %}>
+                        <button class="btn btn-outline-secondary {% if not nav_data.conf.is_premium %}disabled{% endif %}" type="button" onclick="copyelement('main_ws')" data-toggle="tooltip" data-placement="top" title="Copied!" id="main_ws_btn"><i class="fa-solid fa-copy"></i></button>
+                        <span class="input-group-text"><span data-feather="star"></span></span>
+                    </div>
+                    
+                    <div class="input-group mb-2 mt-2">
+                        <input type="text" class="form-control" placeholder="Worksheet" id="arch_ws" value="https://docs.google.com/spreadsheets/d/{{nav_data.conf.p_archive_sheetid}}" autocomplete="off" {% if not nav_data.conf.is_premium %}disabled{% endif %}>
+                        <button class="btn btn-outline-secondary {% if not nav_data.conf.is_premium %}disabled{% endif %}" type="button" onclick="copyelement('arch_ws')" data-toggle="tooltip" data-placement="top" title="Copied!" id="arch_ws_btn"><i class="fa-solid fa-copy"></i></button>
+                        <span class="input-group-text"><span data-feather="star"></span></span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+
+            <!-- Email notifications preferences card-->
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Settings
+                </div>
+                <div class="card-body">
+
+                    <div class="input-group mb-3">
+                        <label class="input-group-text" for="signup-overflow-select">Signup Overflow</label>
+                        <select class="form-select" id="signup-overflow-select" autocomplete="off" aria-label="Select signup overflow method">
+                            <option value="0" {% if nav_data.conf.signup_overflow_method == 0 %}selected{% endif %}>Truncate</option>
+                            <option value="1" {% if nav_data.conf.signup_overflow_method == 1 %}selected{% endif %}>Overflow</option>
+                        </select>
+                    </div>
+                    
+
+                    <div class="input-group mb-3">
+                        <label class="input-group-text" for="thread-delete-select">Thread Delete Method</label>
+                        <select class="form-select" id="thread-delete-select" autocomplete="off" aria-label="Select thread delete method">
+                            <option value="0" {% if nav_data.conf.thread_delete_method == 0 %}selected{% endif %}>Delete</option>
+                            <option value="1" {% if nav_data.conf.thread_delete_method == 1 %}selected{% endif %}>Archive</option>
+                        </select>
+                    </div>
+                    
+                    {% if nav_data.conf.is_premium %}
+                    <div class="d-flex input-group mb-2 mt-3">
+                        <span class="input-group-text flex-shrink-1 justify-content-end w-25 align-items-end" data-bs-toggle="tooltip" data-bs-title="Choose when events are automatically deleted.">Auto-Clean:</span>
+                        
+                        <div class="form-floating flex-shrink-1" style="width:31.5%">
+                            <input type="number" class="form-control rounded-0" value="{{nav_data.conf.autoclean.0}}" id="acth" autocomplete="off" name="acth" onkeypress="return isNumber(event)" onpaste="return false;" aria-label="Auto-clean hours" {% if not nav_data.conf.is_premium %}readonly{% endif %}>
+                            <label class="m-0 py-0 px-1" for="acth">Hours</label>
+                        </div>
+                        <div class="form-floating flex-shrink-2" style="width:31.5%">
+                            <input type="number" class="form-control rounded-0" value="{{nav_data.conf.autoclean.1}}" id="actm" autocomplete="off" name="actm" onkeypress="return isNumber(event)" onpaste="return false;" aria-label="Auto-clean minutes" {% if not nav_data.conf.is_premium %}readonly{% endif %}>
+                            <label class="m-0 py-0 px-1" for="actm">Minutes</label>
+                        </div>
+
+                        <span class="input-group-text" data-bs-toggle="tooltip" data-bs-title="Plus Feature."><span data-feather="star"></span></span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title" 
+                                data-bs-toggle="tooltip" 
+                                data-bs-title="Choose your favourite channels. These will appear at the top of selection lists.">
+                                Favourite Channels
+                            </h5>
+                        </div>
+                        <div class="card-body p-1">
+                            <form id="delete-event-chnl" method="post">
+                                {% csrf_token %}
+                                {% for channel in channels %}
+                                    {% if channel.discord_id in nav_data.conf.event_channels %}
+                                    <div class='input-group mb-2 mt-2'>
+                                        <input type='text' class='form-control' value='{{channel.name}}' id='{{channel.discord_id}}' name='event_chnl' readonly/>
+                                        <button id='delete' class='btn btn-danger' type='submit' value="{{channel.discord_id}}"><span data-feather='trash'></span></button>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </form>
+
+
+                            <form id="add-event-chnl" method="post">
+                                {% csrf_token %}
+                                <div class="input-group mb-3">
+                                    <label class="input-group-text" for="add_event_chnl">Add:</label>
+                                    <select class="form-select" id="add_event_chnl" aria-label="Select Channel to add...">
+                                        <option value="">Select Channel...</option>
+                                        {% for channel in channels %}
+                                            {% if channel.discord_id not in nav_data.conf.event_channels %}
+                                                <option value='{{channel.discord_id}}'>{{channel.name}}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    <button id="addec" class="btn btn-success" type="submit"><span data-feather="plus"></span></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-3">
+                        <button id="save-settings-btn" class="btn btn-success">Save Settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Reminders
+                    <div class="card-subtitle mb-0">Customize your reminders.</div>
+                </div>
+                <div class="card-body p-4">
+                    <div id="reminders-container">
+                        {% for reminder in nav_data.conf.reminders %}
+                        <div class="card mb-3 reminder-card" data-reminder-index="{{ forloop.counter0 }}">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="reminder-name">{{ reminder.name }}</span>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-reminder-btn"><span data-feather="edit"></span></button>
+                                    {% if nav_data.conf.is_premium %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-reminder-btn"><span data-feather="trash"></span></button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="discord-embed" style="border-left: 4px solid #{{ reminder.color }};">
+                                    <div class="discord-embed-content p-3">
+                                        <div class="discord-embed-fields mb-3">
+                                            <div class="discord-embed-field">
+                                                <div class="discord-embed-field-name">Time</div>
+                                                <div class="discord-embed-field-value">{{ reminder.time }} hours before</div>
+                                            </div>
+                                            <div class="discord-embed-field">
+                                                <div class="discord-embed-field-name">Target</div>
+                                                <div class="discord-embed-field-value">{{ reminder.target }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="discord-embed-description">
+                                            <div class="discord-embed-description-title mb-1">Message</div>
+                                            <div class="discord-embed-description-content">{{ reminder.message }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Hidden inputs to maintain functionality -->
+                                <input type="hidden" class="reminder-time" value="{{ reminder.time }}">
+                                <input type="hidden" class="reminder-target" value="{{ reminder.target }}">
+                                <input type="hidden" class="reminder-color" value="{{ reminder.color }}">
+                                <input type="hidden" class="reminder-message" value="{{ reminder.message }}">
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <style>
+                        .discord-embed {
+                            background-color: #36393f;
+                            border-radius: 4px;
+                            color: #dcddde;
+                            font-family: 'gg sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                        }
+                        .discord-embed-title h5 {
+                            color: #ffffff;
+                            font-weight: 600;
+                        }
+                        .discord-embed-fields {
+                            display: flex;
+                            flex-wrap: wrap;
+                        }
+                        .discord-embed-field {
+                            flex: 1 1 50%;
+                            padding-right: 10px;
+                            margin-bottom: 8px;
+                        }
+                        .discord-embed-field-name {
+                            color: #ffffff;
+                            font-weight: 600;
+                            font-size: 0.9rem;
+                            margin-bottom: 2px;
+                        }
+                        .discord-embed-field-value {
+                            color: #dcddde;
+                            font-size: 0.9rem;
+                        }
+                        .discord-embed-description-title {
+                            color: #ffffff;
+                            font-weight: 600;
+                            font-size: 0.9rem;
+                        }
+                        .discord-embed-description-content {
+                            color: #dcddde;
+                            font-size: 0.9rem;
+                            white-space: pre-wrap;
+                        }
+                    </style>
+                    {% if nav_data.conf.is_premium %}
+                    <div class="d-grid gap-2 mt-3">
+                        <button id="add-reminder-btn" class="btn btn-success">Add New Reminder</button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reminder Edit Modal -->
+    <div class="modal fade" id="reminderModal" tabindex="-1" aria-labelledby="reminderModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reminderModalLabel">Edit Reminder</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="reminder-index" value="-1">
+                    <div class="mb-3">
+                        <label for="modal-reminder-name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="modal-reminder-name" placeholder="Reminder Name" {% if not nav_data.conf.is_premium %}disabled{% endif %}>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="modal-reminder-time" class="form-label">Hours Before Event</label>
+                            <input type="number" class="form-control" id="modal-reminder-time" min="0" max="720">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="modal-reminder-target" class="form-label">Target</label>
+                            <select class="form-select" id="modal-reminder-target" {% if not nav_data.conf.is_premium %}disabled{% endif %}>
+                                {% if nav_data.conf.is_premium %}
+                                <option value="all">All</option>
+                                <option value="attending">Attending</option>
+                                <option value="tentative">Tentative</option>
+                                <option value="nosign">Not Signed Up</option>
+                                <option value="confirmed">Confirmed</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal-reminder-color" class="form-label">Color</label>
+                        <div class="input-group">
+                            <span class="input-group-text">#</span>
+                            <input type="text" class="form-control" id="modal-reminder-color" maxlength="6" placeholder="ff0000" {% if not nav_data.conf.is_premium %}disabled{% endif %}>
+                            <input type="color" class="form-control form-control-color" id="modal-color-picker" value="#ff0000" {% if not nav_data.conf.is_premium %}disabled{% endif %}>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal-reminder-message" class="form-label">Message</label>
+                        <textarea class="form-control" id="modal-reminder-message" rows="5" {% if not nav_data.conf.is_premium %}disabled{% endif %}></textarea>
+                        <div class="form-text mt-2">
+                            <p><strong>Available placeholders:</strong></p>
+                            <p style="margin-bottom:0;"><small>Event details: {title} {description} {channel} {discord_url} {sheet_url}</small></p>
+                            <p style="margin-bottom:0;"><small>Time formats: {date} {time} {datetime_short} {datetime_long} {datetime_relative} {epoch}</small></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="save-reminder-btn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block js%}
+    <script>
+        function copyelement(elementid) {
+            var copyText = document.getElementById(elementid);
+            var element = document.getElementById(elementid + "_btn");
+
+            var tooltip = bootstrap.Tooltip.getOrCreateInstance(element);
+
+            tooltip.enable();
+            tooltip.show();
+
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            
+            navigator.clipboard.writeText(copyText.value);
+
+            setTimeout(function(){
+                tooltip.hide();
+                tooltip.disable();
+            }, 1000);
+        }
+        
+        function isNumber(event) {
+            var charCode = (event.which) ? event.which : event.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                return false;
+            }
+            return true;
+        }
+
+
+        $( document ).ready(function() {
+            $('a[id="config"]').addClass('active');
+
+            // Store initial values
+            var initialValues = {
+                signup_overflow: $('#signup-overflow-select').val(),
+                thread_delete: $('#thread-delete-select').val(),
+                {% if nav_data.conf.is_premium %}
+                autoclean_hours: $('#acth').val(),
+                autoclean_minutes: $('#actm').val()
+                {% endif %}
+            };
+
+            // Initially disable the save button
+            $('#save-settings-btn').prop('disabled', true);
+
+            // Function to check if values have changed
+            function checkForChanges() {
+                var currentValues = {
+                    signup_overflow: $('#signup-overflow-select').val(),
+                    thread_delete: $('#thread-delete-select').val(),
+                    {% if nav_data.conf.is_premium %}
+                    autoclean_hours: $('#acth').val(),
+                    autoclean_minutes: $('#actm').val()
+                    {% endif %}
+                };
+
+                var hasChanges = 
+                    initialValues.signup_overflow !== currentValues.signup_overflow ||
+                    initialValues.thread_delete !== currentValues.thread_delete 
+                    {% if nav_data.conf.is_premium %}
+                    || initialValues.autoclean_hours !== currentValues.autoclean_hours ||
+                    initialValues.autoclean_minutes !== currentValues.autoclean_minutes;
+                    {% endif %}
+
+                $('#save-settings-btn').prop('disabled', !hasChanges);
+            }
+
+            // Add change event listeners to all settings inputs
+            $('#signup-overflow-select, #thread-delete-select, #acth, #actm').on('change input', checkForChanges);
+
+            // Settings save functionality
+            $('#save-settings-btn').click(function() {
+                var settingsData = {
+                    signup_overflow_method: $('#signup-overflow-select').val(),
+                    thread_delete_method: $('#thread-delete-select').val(),
+                    {% if nav_data.conf.is_premium %}
+                    autoclean: [
+                        parseInt($('#acth').val()) || 0,
+                        parseInt($('#actm').val()) || 0,
+                        0
+                    ]
+                    {% endif %}
+                };
+
+                // Send AJAX request to save settings
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'POST',
+                    url: "{% url 'discord:config_update_settings' nav_data.hash %}",
+                    data: JSON.stringify(settingsData),
+                    contentType: 'application/json',
+                    success: function(response) {
+                        // Update initial values after successful save
+                        initialValues = {
+                            signup_overflow: $('#signup-overflow-select').val(),
+                            thread_delete: $('#thread-delete-select').val(),
+                            {% if nav_data.conf.is_premium %}
+                            autoclean_hours: $('#acth').val(),
+                            autoclean_minutes: $('#actm').val()
+                            {% endif %}
+                        };
+                        
+                        $('#alert').prop('hidden', false);
+                        $('#alert').removeClass("alert-danger");
+                        $('#alert').addClass("alert-success");
+                        $('#alert').text("Settings saved successfully!");
+                        
+                        // Disable save button after successful save
+                        $('#save-settings-btn').prop('disabled', true);
+                        
+                        setTimeout(function(){
+                            $('#alert').prop('hidden', true);
+                        }, 5000);
+                    },
+                    error: function(response) {
+                        $('#alert').prop('hidden', false);
+                        $('#alert').addClass("alert-danger");
+                        $('#alert').removeClass("alert-success");
+                        $('#alert').text(response.responseJSON.error);
+                        console.log('ERROR:', response.responseJSON.error);
+                    }
+                });
+            });
+
+            // Event channel management
+            $("form button[type=submit][id=delete]").click(function() {
+                $("button[type=submit][id=delete]", $(this).parents("form")).removeAttr("clicked");
+                $(this).attr("clicked", "true");
+            });
+
+            $("#delete-event-chnl").submit(function (e) {
+                // preventing from page reload and default actions
+                e.preventDefault();
+                // serialize the data for sending the form data.
+                var serializedData = $(this).serialize();
+
+                var val = $("button[type=submit][clicked=true]").val();
+
+                // append id
+                let element = $(this).find('input[name="event_chnl"]');
+
+                url = "{% url 'discord:config_update_event_chnls' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', val);
+
+                // make POST ajax call
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'DELETE',
+                    url: url,
+                    data: serializedData,
+                    success: function (response) {
+                        var option = $("<option value=\"" + val + "\">" + 
+                                        $('input[name="event_chnl"][id=' + val + ']').val() + "</option>")
+                        $('#add_event_chnl').append(option)
+                        
+                        $('button[type=submit][value=' + val + ']').parent().remove();
+                    },
+                    error: function (response) {
+                        $('#alert').prop('hidden', false);
+                        $('#alert').addClass("alert-danger");
+                        $('#alert').removeClass("alert-success");
+                        $('#alert').text(response.responseJSON.error);
+                        console.log('ERROR:', response.responseJSON.error);
+                    }
+                });
+            });
+            
+            $("#add-event-chnl").submit(function (e) {
+                // preventing from page reload and default actions
+                e.preventDefault();
+                // serialize the data for sending the form data.
+                var serializedData = $(this).serialize();
+
+                // append id
+                var element = $(this).find('select[id="add_event_chnl"]');
+                var selected = element.find(":selected")
+
+                if (selected.text().toLowerCase().indexOf("select channel") !== -1) {
+                    return;
+                }
+
+                var selVal = selected.attr('value');
+
+                url = "{% url 'discord:config_update_event_chnls' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', selVal);
+
+                // make POST ajax call
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'POST',
+                    url: url,
+                    data: serializedData,
+                    success: function (response) {
+                        // add to list
+                        var input = $("<div class=\"input-group mb-2 mt-2\"> <input type=\"text\" class=\"form-control\" value=\"" + selected.text() + "\" id=\"" + selVal + "\" name=\"event_chnl\" readonly/>"+
+                                        "<button id=\"delete\" class=\"btn btn-danger\" type=\"submit\" value=\"" + selVal + "\"><span data-feather=\"trash\"></span></button></div>");
+                        $('#delete-event-chnl').append(input);
+
+                        $('button[id="delete"][value="' + selVal + '"]').click(function() {
+                            $("button[type=submit]", $(this).parents("form")).removeAttr("clicked");
+                            $(this).attr("clicked", "true");
+                        });
+                        
+                        feather.replace()
+
+                        // remove from options
+                        selected.remove();
+                    },
+                    error: function (response) {
+                        $('#alert').prop('hidden', false);
+                        $('#alert').addClass("alert-danger");
+                        $('#alert').removeClass("alert-success");
+                        $('#alert').text(response.responseJSON.error);
+                        console.log('ERROR:', response.responseJSON.error);
+                    }
+                });
+            });
+
+            // Color picker interaction
+            $('#modal-color-picker').on('input', function() {
+                var hexColor = $(this).val().substring(1); // Remove the # character
+                $('#modal-reminder-color').val(hexColor);
+            });
+            
+            $('#modal-reminder-color').on('input', function() {
+                var hexValue = $(this).val();
+                if (/^[0-9A-F]{6}$/i.test(hexValue)) {
+                    $('#modal-color-picker').val('#' + hexValue);
+                }
+            });
+            
+            // Edit reminder button
+            $('.edit-reminder-btn').click(function() {
+                var reminderCard = $(this).closest('.reminder-card');
+                var index = reminderCard.data('reminder-index');
+                
+                // Get current values from the UI instead of server-side data
+                var name = reminderCard.find('.reminder-name').text();
+                var time = reminderCard.find('.reminder-time').val();
+                var target = reminderCard.find('.reminder-target').val();
+                var color = reminderCard.find('.reminder-color').val();
+                var message = reminderCard.find('.reminder-message').val();
+                
+                $('#reminder-index').val(index);
+                $('#modal-reminder-name').val(name);
+                $('#modal-reminder-time').val(time);
+
+                {% if not nav_data.conf.is_premium %}
+                var humanTarget;
+                if(target == 'all') {
+                    humanTarget = 'All';
+                } 
+                else if(target == 'attending') {
+                    humanTarget = 'Attending';
+                }
+                else if(target == 'tentative') {
+                    humanTarget = 'Tentative';
+                }
+                else if(target == 'nosign') {
+                    humanTarget = 'Not Signed Up';
+                }
+                else if(target == 'confirmed') {
+                    humanTarget = 'Confirmed';
+                }
+                else {
+                    humanTarget = target;
+                }
+
+                $('#modal-reminder-target').empty();
+                $('#modal-reminder-target').append('<option value="' + target + '">'+humanTarget+'</option>');
+                {% endif %}
+                $('#modal-reminder-target').val(target).change();
+                
+
+                $('#modal-reminder-color').val(color);
+                $('#modal-color-picker').val('#' + color);
+                $('#modal-reminder-message').val(message);
+                
+                $('#reminderModalLabel').text('Edit Reminder');
+                $('#reminderModal').modal('show');
+            });
+            
+            // Delete reminder button
+            $('.delete-reminder-btn').click(function() {
+                if (confirm('Are you sure you want to delete this reminder?')) {
+                    var reminderCard = $(this).closest('.reminder-card');
+                    var index = reminderCard.data('reminder-index');
+                    
+                    // Send AJAX request to delete the reminder
+                    $.ajax({
+                        headers: {'X-CSRFToken': csrftoken},
+                        type: 'POST',
+                        url: "{% url 'discord:config_delete_reminder' nav_data.hash %}",
+                        data: { 'index': index },
+                        success: function(response) {
+                            // Remove the card for the deleted reminder
+                            reminderCard.remove();
+                            
+                            // Update the indices of all remaining cards
+                            $('.reminder-card').each(function() {
+                                var currentIndex = $(this).data('reminder-index');
+                                // Only update if the current index is greater than the deleted index
+                                if (currentIndex > index) {
+                                    $(this).attr('data-reminder-index', currentIndex - 1);
+                                }
+                            });
+                            
+                            $('#alert').prop('hidden', false);
+                            $('#alert').removeClass("alert-danger");
+                            $('#alert').addClass("alert-success");
+                            $('#alert').text("Reminder deleted successfully!");
+                            
+                            setTimeout(function(){
+                                $('#alert').prop('hidden', true);
+                            }, 5000);
+                        },
+                        error: function(response) {
+                            $('#alert').prop('hidden', false);
+                            $('#alert').addClass("alert-danger");
+                            $('#alert').removeClass("alert-success");
+                            $('#alert').text(response.responseJSON.error);
+                            console.log('ERROR:', response.responseJSON.error);
+                        }
+                    });
+                }
+            });
+            
+            // Add new reminder button
+            $('#add-reminder-btn').click(function() {
+                // Reset the form
+                $('#reminder-index').val('-1');
+                $('#modal-reminder-name').val('New Reminder');
+                $('#modal-reminder-time').val('24');
+                $('#modal-reminder-target').val('all');
+                $('#modal-reminder-color').val('0000ff');
+                $('#modal-color-picker').val('#0000ff');
+                $('#modal-reminder-message').val('Event **{title}** is happening {datetime_relative}!');
+                
+                $('#reminderModalLabel').text('Add New Reminder');
+                $('#reminderModal').modal('show');
+            });
+            
+            // Save reminder (create or update)
+            $('#save-reminder-btn').click(function() {
+                var index = $('#reminder-index').val();
+                var reminderData = {
+                    name: $('#modal-reminder-name').val(),
+                    sequence: 'before', // Currently only supporting 'before' as mentioned
+                    time: parseInt($('#modal-reminder-time').val()),
+                    color: $('#modal-reminder-color').val(),
+                    target: $('#modal-reminder-target').val(),
+                    message: $('#modal-reminder-message').val()
+                };
+                
+                // Validate inputs
+                if (!reminderData.name || reminderData.name.trim() === '') {
+                    alert('Please provide a reminder name');
+                    return;
+                }
+                
+                if (isNaN(reminderData.time) || reminderData.time < 0) {
+                    alert('Please provide a valid time in hours');
+                    return;
+                }
+                
+                if (!reminderData.message || reminderData.message.trim() === '') {
+                    alert('Please provide a message for the reminder');
+                    return;
+                }
+                
+                // Send AJAX request to save the reminder
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'POST',
+                    url: "{% url 'discord:config_save_reminder' nav_data.hash %}",
+                    data: { 
+                        'index': index,
+                        'reminder_data': JSON.stringify(reminderData)
+                    },
+                    success: function(response) {
+                        $('#reminderModal').modal('hide');
+                        
+                        // Update the UI to reflect changes
+                        if (index === '-1') {
+                            // New reminder - reload the page to show it
+                            location.reload();
+                        } else {
+                            // Updated reminder - update the card
+                            var card = $(`.reminder-card[data-reminder-index="${index}"]`);
+                            
+                            // Update the card header name
+                            card.find('.reminder-name').text(reminderData.name);
+                            
+                            // Update the Discord embed
+                            card.find('.discord-embed').css('border-left-color', '#' + reminderData.color);
+                            card.find('.discord-embed-field-value').first().text(reminderData.time + ' hours before');
+                            card.find('.discord-embed-field-value').last().text(reminderData.target);
+                            card.find('.discord-embed-description-content').text(reminderData.message);
+                            
+                            // Update hidden inputs
+                            card.find('.reminder-time').val(reminderData.time);
+                            card.find('.reminder-target').val(reminderData.target);
+                            card.find('.reminder-color').val(reminderData.color);
+                            card.find('.reminder-message').val(reminderData.message);
+                        }
+                        
+                        $('#alert').prop('hidden', false);
+                        $('#alert').removeClass("alert-danger");
+                        $('#alert').addClass("alert-success");
+                        $('#alert').text("Reminder saved successfully!");
+                        
+                        setTimeout(function(){
+                            $('#alert').prop('hidden', true);
+                        }, 5000);
+                    },
+                    error: function(response) {
+                        $('#alert').prop('hidden', false);
+                        $('#alert').addClass("alert-danger");
+                        $('#alert').removeClass("alert-success");
+                        $('#alert').text(response.responseJSON.error);
+                        console.log('ERROR:', response.responseJSON.error);
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

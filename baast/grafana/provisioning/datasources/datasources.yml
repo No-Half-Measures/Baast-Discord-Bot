@@ -1,0 +1,22 @@
+apiVersion: 1
+
+datasources:
+  # No uid on Prometheus — matches existing graf_data entry by name (avoids Grafana 13 UID mismatch crash).
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://promethus:9090
+    isDefault: true
+    editable: true
+
+  # New datasource — explicit uid for the Faro dashboard.
+  - name: Loki
+    type: loki
+    access: proxy
+    orgId: 1
+    uid: loki
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      maxLines: 1000

@@ -1,0 +1,57 @@
+<div class="modal fade panel-modal" tabindex="-1" id="optionModal">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="optionHead">Editing Option...</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger" role="alert" id="nevntAlert" hidden>Error: ...............</div>
+
+                <div class="panel-field panel-field-wide input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text justify-content-end">Label</span>
+                    </div>
+                    <input type="text" class="form-control" aria-label="label" autocomplete="off" value="" maxlength="100" minlength="1" id="optLabel">
+                </div>
+
+                <div class="panel-field panel-field-wide input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text justify-content-end">Colour</span>
+                    </div>
+                    <select class="form-select" aria-label="Select the option colour:" autocomplete="off" id="optColour">
+                        <option value='green'>Green</option>
+                        <option value='red'>Red</option>
+                        <option value='blurple'>Blurple</option>
+                        <option value='grey'>Grey</option>
+                    </select>
+                </div>
+
+                <div class="panel-field panel-field-wide input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text justify-content-end">Attending</span>
+                    </div>
+                    <input type="checkbox" data-toggle="toggle" data-onstyle="outline-primary" data-offstyle="outline-secondary" id="attendingToggle" autocomplete="off" data-width="100">
+                </div>
+
+                <div class="panel-field panel-field-wide input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text justify-content-end">Tentative</span>
+                    </div>
+                    <input type="checkbox" data-toggle="toggle" data-onstyle="outline-primary" data-offstyle="outline-secondary" id="tentativeToggle" autocomplete="off" data-width="100">
+                </div>
+
+                <div class="panel-field panel-field-wide input-group mb-0">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text justify-content-end">Send Notifications</span>
+                    </div>
+                    <input type="checkbox" data-toggle="toggle" data-onstyle="outline-primary" data-offstyle="outline-secondary" id="notieToggle" autocomplete="off" data-width="100">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="SaveOption('{{nav_data.hash}}')" id="optSave">Save</button>
+            </div>
+        </div>
+    </div>
+</div>

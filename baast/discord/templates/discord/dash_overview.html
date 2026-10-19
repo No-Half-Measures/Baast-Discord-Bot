@@ -1,0 +1,187 @@
+{% extends "discord/dash_base.html" %} 
+{% load static %}
+{% block title %}Overview{% endblock %}
+{% block nav_title %}Overview{% endblock %}
+{% block content %}	
+
+    {% comment %} <div class="row gx-4 pt-4">
+        <div class="col-6 col-xxl-3 mb-2">
+            <div class="col rounded bg-dark-blue">
+                <div class="flex space-x-4 ps-4">
+                    <ul class="nav nav-underline">
+                        <li class="nav-item">
+                            <a class="nav-link text-white active" aria-current="page" href="{% url 'events:blog_list' %}">Overview</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{% url 'events:blog_list' %}?type=news">Stats</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xxl-1 offset-xxl-8 mb-2">
+            <div class="card card-raised bg-gold text-white">
+                <div class="card-body p-2 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="me-2">
+                            <div class="card-text">Premium Status</div>
+                        </div>
+                        <div class="icon-circle bg-white-50 text-white">
+                            <div class="card-text">{% if nav_data.conf.is_premium %}Active{% else %}Expired{% endif %}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> {% endcomment %}
+
+    <div class="row gx-4 pt-4">
+        <div class="col-12 col-xxl-3 mb-2">
+            <div class="card card-raised bg-gold text-white mb-3">
+                <div class="card-body p-2 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="me-2">
+                            <div class="card-text">Premium Status</div>
+                        </div>
+                        <div class="icon-circle bg-white-50 text-white">
+                            <div class="card-text">{% if nav_data.conf.is_premium %}Active{% else %}Expired{% endif %}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="list-group">
+                <a class="list-group-item bg-dark-blue">
+                    <h5 class="mb-1">Upcoming Events</h5>
+                </a>
+
+                {% for event in events %}
+                <a href="{% url 'discord:dash_event' nav_data.hash event.id %}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ event.title }}</h5>
+                        <small>In {{ event.event_date |timeuntil }}</small>
+                    </div>
+                    <p class="mb-1">{{event.description|truncatewords:20}}</p>
+                    <small>{{ event.responces }} responses.</small>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-12 col-xxl mb-2">
+            <div class="row gx-4">
+                <div class="col-6 col-xxl-3 mb-2">
+                    <div class="card card-raised bg-gold text-white">
+                        <div class="card-body px-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="me-2">
+                                    <div class="display-5 text-white">{{ events_cnt|stringformat:"i" }}</div>
+                                    <div class="card-text">Events</div>
+                                </div>
+                                <div class="icon-circle bg-white-50 "><span data-feather="calendar"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-xxl-3 mb-2">
+                    <div class="card card-raised bg-gold text-white">
+                        <div class="card-body px-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="me-2">
+                                    <div class="display-5 text-white">{{responce_cnt|stringformat:"i" }}</div>
+                                    <div class="card-text">Responses</div>
+                                </div>
+                                <div class="icon-circle bg-white-50 text-white"><span data-feather="bell"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-xxl-3 mb-2">
+                    <div class="card card-raised bg-gold text-white">
+                        <div class="card-body px-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="me-2">
+                                    <div class="display-5 text-white">{{preset_cnt|stringformat:"i" }}</div>
+                                    <div class="card-text">Presets</div>
+                                </div>
+                                <div class="icon-circle bg-white-50 text-white"><span data-feather="bell"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-xxl-3 mb-2">
+                    <div class="card card-raised bg-gold text-white">
+                        <div class="card-body px-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="me-2">
+                                    <div class="display-5 text-white">{{template_cnt|stringformat:"i" }}</div>
+                                    <div class="card-text">Templates</div>
+                                </div>
+                                <div class="icon-circle bg-white-50 text-white"><span data-feather="bell"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row row-cols-6 gx-4 px-2 pt-2">
+                <div class="col-4 mb-2">
+                    <div class="card card-raised">
+                        <div class="card-header bg-blue px-4 text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Event Stats</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{event_stats| safe}}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4 mb-2">{% comment %} Will Be Diff Stats {% endcomment %}
+                    <div class="card card-raised">
+                        <div class="card-header bg-blue px-4 text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Responce Stats</h5>
+                                    <small>Over the last 30 days</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{responce_stats| safe}}
+                        </div>
+                    </div>
+                </div>
+                {% comment %} <div class="col-4 mb-2">
+                    <div class="card card-raised">
+                        <div class="card-header bg-blue px-4 text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h2 class="mb-1">Stats</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{event_stats| safe}}
+                        </div>
+                    </div>
+                </div> {% endcomment %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block js%}
+    <script>
+        $( document ).ready(function() {
+            $('a[id="overview"]').addClass('active');
+        });
+
+
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    </script>
+{% endblock %}

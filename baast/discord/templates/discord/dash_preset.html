@@ -1,0 +1,683 @@
+{% extends "discord/dash_base.html" %} 
+{% load static %}
+{% block title %}Option Preset{% endblock %}
+{% block nav_title %}{{ option.name }} Preset{% endblock %}
+{% block content %}
+{% if nav_data.conf.is_premium %}
+    {% include "discord/dash_confirm_modal.html" %}
+    {% include "discord/dash_option_modal.html" %}
+    {% include "discord/dash_roleset_modal.html" %}
+{% else %}
+    <div class="alert alert-warning mt-4" role="alert">
+        This feature is only available to Premium Guilds. <a href="{% url 'events:pricing' %}">Upgrade</a>
+    </div>
+{% endif %}
+    
+
+    <div class="row gx-4 pt-4">
+        <div class="col-lg-6">
+            <!-- Email notifications preferences card-->
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Settings
+                </div>
+                <div class="card-body">
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:23%"> 
+                            <span class="input-group-text justify-content-end">Name</span>
+                        </div>
+                        <input type="text" class="form-control" aria-label="label" autocomplete="off" value="{{option.name}}" maxlength="100" minlength="1" id="presetName"></input>
+                    </div>
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Use Capacity</span>
+                        <input id="capToggle" type="checkbox" {% if option.use_capacity %}checked{% endif %} data-toggle="toggle" data-onstyle="outline-primary" data-offstyle="outline-secondary" autocomplete="off">
+                    </div>
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Split Capacity</span>
+                        <input id="splitCapToggle" type="checkbox" {% if option.split_capacity %}checked{% endif %} data-toggle="toggle" data-onstyle="outline-primary" data-offstyle="outline-secondary" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Options
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-warning" role="warning">It should be noted the order of options is how they will be ordered as buttons.</div>
+                    <table id="optionsTable" class="dataTable-table table table-striped table-hover" style="table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th data-field="label" data-sortable="false" style="min-width: 25%; width: auto;"><a href="#" class="dataTable-sorter">Label</a></th>
+                                <th data-field="colour" data-sortable="false" style="min-width: 20%; width: auto;"><a href="#" class="dataTable-sorter">Colour</a></th>
+                                <th data-field="attending" class="nomob" data-sortable="false" style="width: 15%;"><a href="#" class="dataTable-sorter">Is Attending</a></th>
+                                <th data-field="tentative" class="nomob" data-sortable="false" style="width: 15%;"><a href="#" class="dataTable-sorter">Is Tentative</a></th>
+                                <th data-field="notifications" class="nomob" data-sortable="false" style="width: 15%;"><a href="#" class="dataTable-sorter">Send Notifications</a></th>
+                                {% if nav_data.conf.guild == option.gid.guild %}
+                                <th class="" data-sortable="false" style="width: 120px;"><a href="#" class="dataTable-sorter"></a></th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for opt in option.options%}
+                                <tr data-id="{{forloop.counter0}}" id="{{forloop.counter0}}" >
+                                    <td class="drag-handle" id="option-label">{{opt.label}}</td>
+                                    <td id="option-colour">{{opt.colour}}</td>
+                                    <td id="option-attending" class="nomob"><span class="badge bg-{% if opt.is_attending %}success{% else %}danger{%endif%}">{{opt.is_attending}}</span></td>
+                                    <td id="option-tentative" class="nomob"><span class="badge bg-{% if opt.istentative %}success{% else %}danger{%endif%}">{{opt.istentative}}</span></td>
+                                    <td id="option-noty" class="nomob"><span class="badge bg-{% if opt.send_notifcations %}success{% else %}danger{%endif%}">{{opt.send_notifcations}}</span></td>
+                                    {% if nav_data.conf.guild == option.gid.guild %}
+                                    <td class="">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-primary pt-0" onclick="ShowPresetModal('{{forloop.counter0}}', '{{opt.label}}', '{{opt.colour}}', '{{opt.is_attending}}', '{{opt.istentative}}', '{{opt.send_notifcations}}');"><span data-feather="edit"></span></button>
+                                            <button type="button" class="btn btn-primary pt-0 oDelete"><span data-feather="trash"></span></button>
+                                        </div>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5"></td>
+                                {% if nav_data.conf.guild == option.gid.guild %}<td ><button id="addOption" type="button" class="btn btn-success pt-0" onclick="ShowPresetModalNew();"><span data-feather="plus-square"></span></button></td>{% endif %}
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Role Assignments
+                </div>
+                <div class="card-body p-4">
+                    <table id="roleSetsTable" class="dataTable-table table table-striped table-hover" style="table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th data-field="label" data-sortable="false" style="min-width: 20%; width: 100%;"><a href="#" class="dataTable-sorter">Role Set</a></th>
+                                <th data-field="colour" data-sortable="false" style="min-width: 60%; width: 100%;"><a href="#" class="dataTable-sorter">Roles</a></th>
+                                <th class="" data-sortable="false" style="width: 120px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if role_sets %}
+                            {% for set in role_sets%}
+                                <tr data-id="{{set.id}}" id="{{set.id}}" >
+                                    <td class="drag-handle" id="option-label">{{set.name}}</td>
+                                    <td id="option-role">
+                                        {{set.to_html|safe}}
+                                    </td>
+                                    <td>
+                                        {% if nav_data.conf.is_premium %} 
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-primary pt-0" onclick="ShowRoleSetModal('{{set.id}}');">
+                                                <span data-feather="edit"></span>
+                                            </button>
+                                            <button type="button" class="btn btn-primary pt-0" onclick="DeleteRoleSet('{{set.id}}');">
+                                                <span data-feather="trash"></span>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            {% endif %}
+                        </tbody>
+                        <tfoot>
+                            <tr >
+                                {% if nav_data.conf.is_premium %} 
+                                <td colspan="2"></td>
+                                <td ><button id="addRoleSet" type="button" class="btn btn-success pt-0"><span data-feather="plus-square"></span></button></td>
+                                {% endif %}
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% if nav_data.conf.guild == option.gid.guild %}
+        <div class="d-grid gap-2 col-6 mx-auto my-4">
+            <button id="saveOptions_btn" type="submit" class="btn btn-success" data-bs-toggle="tooltip" data-bs-placement="right" title="Saved!">Save</button>
+        </div>
+        {% endif %}
+    </div>
+    
+{% endblock %}
+{% block js%}
+{% if nav_data.conf.is_premium %}
+    <script src="https://cdn.jsdelivr.net/npm/tablednd@1.0.5/dist/jquery.tablednd.min.js"></script>    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.23.2/dist/bootstrap-table.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.23.2/dist/extensions/reorder-rows/bootstrap-table-reorder-rows.min.js"></script>
+
+    <script>
+        var options = [{% for opt in option.options %}
+        { index: '{{forloop.counter0}}', label: '{{opt.label}}' },
+        {% endfor %}]
+
+        function  GetOptionName(index) {
+            for (i = 0; i < options.length; i++) {
+                if (options[i]["index"] == index) {
+                    return options[i]["label"]
+                }
+            }
+        }
+
+        function GetRoleSelect(selected) {
+            let role_select = `<select class="form-select option-role-select" autocomplete="off" > <option value="none">None</option>`
+            {% for role in roles %}
+                role_select += `<option value='{{role.discord_id}}' ${selected === "{{role.discord_id}}" ? 'selected' : ''}>{{role.discord_name}}</option>`
+            {% endfor %}
+            role_select += `</select>`
+
+            return role_select
+        }
+
+        {% if nav_data.conf.guild == option.gid.guild %}
+        function ReorderOptions(old_index, new_index) {
+            // Store the current table order
+            let newOrder = [];
+            $('#optionsTable tbody tr').each(function() {
+                let index = parseInt($(this).attr('id'));
+                newOrder.push(options[index]);
+            });
+            
+            // Replace the options array with the new order
+            options = newOrder;
+            
+            // Update all indices to match new positions
+            //options.forEach((opt, idx) => {
+            //    opt.index = idx.toString();
+            //});
+        }
+        {% endif %}
+
+        $(document).ready(function () {
+            $('#optionsTable').bootstrapTable({
+                {% if nav_data.conf.guild == option.gid.guild %}
+                reorderableRows: true, // Enable row reordering
+                dragHandle: '.drag-handle',
+                {% endif %}
+                pagination: false,     // Disable pagination
+                search: false,         // Disable search
+                showRefresh: false,    // Disable refresh button
+                showToggle: false,     // Disable view toggle
+                showColumns: false,    // Disable column visibility options
+                showFooter: true,
+                {% if nav_data.conf.guild == option.gid.guild %}
+                onReorderRowsDrop: function (row) {
+                    let old_index;
+                    if (row._id) {
+                        old_index = parseInt(row._id);
+                    } else {
+                        let $fullRow = $(row).closest('tr');
+                        old_index = parseInt($fullRow.attr('id'));
+                    }
+                    
+                    if (isNaN(old_index)) {
+                        console.error('Invalid row ID:', old_index);
+                        return;
+                    }
+
+                    // Get new index by finding the current position of the row in the table
+                    let new_index = $('#optionsTable tbody tr').index($(`tr[id="${old_index}"]`));
+                    console.log(old_index, new_index)
+                    if (old_index !== new_index) {
+                        ReorderOptions(old_index, new_index);
+                        
+                        // Update all row IDs and data-ids
+                        $('#optionsTable tbody tr').each(function (index) {    
+                            $(this).attr('id', index);
+                            $(this).attr('data-id', index);
+                            $(this).data('id', index);
+                            
+                            // Update the data-option-id of the role select
+                            $(this).find('.option-role-select').data('option-id', index);
+                        });
+                    }
+                },
+                {% endif %}
+            });
+            
+            $('input[data-toggle="toggle"]').bootstrapToggle({
+                onlabel: 'Enabled',
+                offlabel: 'Disabled'
+            });
+        });
+        
+        {% if nav_data.conf.guild == option.gid.guild %}
+        $(document).on('click', '.oDelete', function() {
+            let $row = $(this).closest('tr');
+            let index = $row.data('id');
+            
+            // Set up the confirm button's onclick handler to call Delete
+            $("#confirm").off('click').on('click', function () {
+                Delete(index, $row);
+            });
+            
+            // Display the confirmation modal
+            var eventModal = document.getElementById('confirmModal');
+            var modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+            modal.show();
+        });
+
+        $(document).on('click', '#saveOptions_btn', function() {
+            // Disable the save button while processing
+            $(this).attr('disabled', true);
+            
+            // Get values
+            let name = $('#presetName').val();
+            let capToggle = $('#capToggle').prop('checked');
+            let splitCapToggle = $('#splitCapToggle').prop('checked');
+            
+            // Get the current order of options
+            let order = [];
+            for (i = 0; i < options.length; i++) {
+                order.push(options[i]["index"]);
+            }
+            
+            let data = {
+                name: name,
+                capToggle: capToggle,
+                splitCapToggle: splitCapToggle,
+                order: JSON.stringify(order)
+            };
+            
+            let url = "{% url 'discord:dash_preset_save' nav_data.hash option.id %}";
+            
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                data: data,
+                success: function(response) {
+                    // Show success state
+                    $('#saveOptions_btn').tooltip('show');
+                    
+                    // reload after .5 seconds
+                    setTimeout(function() {
+                        location.reload();
+                    }, 500);
+                },
+                error: function(xhr, status, error) {
+                    // Re-enable the save button
+                    $('#saveOptions_btn').removeAttr('disabled');
+                    
+                    // Log error
+                    console.error('Error saving preset:', error);
+                    alert('Failed to save changes. Please try again.');
+                }
+            });
+        });
+        {% endif %}
+
+        $(document).on('click', '#addRoleSet', function() {
+            const optionModal = document.getElementById('roleSetModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(optionModal);
+
+            $('#roleSetName').val("");
+            $('#roleSetSave').attr('onclick', `SaveRoleSet('-1')`);
+            $('#editRoleSetMsg').attr("hidden",true);
+
+            url = "{% url 'discord:get_option_by_id' option.id nav_data.hash %}"
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'GET',
+                url: url,
+                dataType: "json",
+                data: '',
+                success: function (response) {
+                    $('#roleAssignmnetTable > tbody').empty();
+
+                    var options = response["options"]
+                    
+                    for (index = 0; index < options['options'].length; index++) {
+                        $('#roleAssignmnetTable > tbody').append(`<tr data-id="${index}" id="${index}" >
+                            <td class="drag-handle" id="option-label">${options['options'][index]['label']}</td>
+                            <td id="option-role">
+                                ${GetRoleSelect(null)}
+                            </td>
+                        </tr>`);
+                    }
+                },
+                error: function (response) {
+                    console.log('ERROR:' + response.error);
+                }
+            });
+
+            modal.show();
+        });
+
+        {% if nav_data.conf.guild == option.gid.guild %}
+        function ShowPresetModal (index, label, colour, att, ten, nfy) {
+            const optionModal = document.getElementById('optionModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(optionModal);
+
+            $('#optionHead').text("Editing Option..."); 
+            
+            $('#optionModal').data('id',index);
+
+            $('#optLabel').val(label);
+            $('#optColour').val(colour);
+            
+            $('#attendingToggle').bootstrapToggle((String(att).toLowerCase() == "true") ? "on" : "off", true);
+            $('#tentativeToggle').bootstrapToggle((String(ten).toLowerCase() == "true") ? "on" : "off", true);
+            $('#notieToggle').bootstrapToggle((String(nfy).toLowerCase() == "true") ? "on" : "off", true);
+
+            modal.show();
+        };
+
+        function ShowPresetModalNew () {
+            const optionModal = document.getElementById('optionModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(optionModal);
+
+            $('#optionHead').text("Creating Option..."); 
+            
+            $('#optionModal').data('id','-1');
+
+            $('#optLabel').val('New Option');
+            
+            $('#attendingToggle').bootstrapToggle("on", true);
+            $('#tentativeToggle').bootstrapToggle("off", true);
+            $('#notieToggle').bootstrapToggle("on", true);
+
+            modal.show();
+        };
+        {% endif %}
+
+        function ShowRoleSetModal (id) {
+            const aModal = document.getElementById('roleSetModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(aModal);
+
+            $('#editRoleSetMsg').attr("hidden", false);
+            
+            url = "{% url 'discord:get_preset_role' option.id nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', id);
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'GET',
+                url: url,
+                dataType: "json",
+                data: '',
+                success: function (response) {
+                    $('#roleSetSave').attr('onclick', `SaveRoleSet(${id})`);
+
+                    $('#roleSetName').val(response["roleset"]["name"])
+
+                    $('#roleAssignmnetTable > tbody').empty();
+
+                    for (i = 0; i < options.length; i++) {
+                        for (j = 0; j < response["roleset"]["roles"].length; j++) {
+                            if (options[i]["index"] == response["roleset"]["roles"][j]["index"]) {
+                                $('#roleAssignmnetTable > tbody').append(`<tr data-id="${response["roleset"]["roles"][j]["index"]}" id="${i}" >
+                                    <td class="drag-handle" id="option-label">${GetOptionName(response["roleset"]["roles"][j]["index"])}</td>
+                                    <td id="option-role">${GetRoleSelect(response["roleset"]["roles"][j]["role_id"])}</td>
+                                </tr>`);
+                            }
+                        }
+                    }
+
+                    modal.show();
+                },
+                error: function (response) {
+                    console.log('ERROR:' + response.error);
+                }
+            });
+        };
+
+        {% if nav_data.conf.guild == option.gid.guild %}
+        function SaveOption(guild) {
+            $('#optSave').attr('disabled', true);
+
+            let index = $('#optionModal').data('id');
+            let label = $('#optLabel').val();
+            let colour = $('#optColour').val();
+
+            let attendingToggle = $('#attendingToggle').prop('checked');
+            let tentativeToggle = $('#tentativeToggle').prop('checked');
+            let notieToggle = $('#notieToggle').prop('checked');
+
+            let data = {
+                label: label,
+                colour: colour,
+                index: index,
+                attendingToggle: attendingToggle,
+                tentativeToggle: tentativeToggle,
+                notieToggle: notieToggle
+            };
+            
+            let serializedData = $.param(data);
+            let url = "{% url 'discord:dash_option_save' nav_data.hash option.id %}";
+
+            // make POST ajax call
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    const optionModal = document.getElementById('optionModal');
+                    const modal = bootstrap.Modal.getOrCreateInstance(optionModal);
+
+                    if(index != "-1")
+                    {
+                        let $option = $('tr[data-id="' + index + '"]');
+                        $option.attr("onclick", `ShowPresetModal('${index}', '${label}', '${attendingToggle}', '${tentativeToggle}', '${notieToggle}');`);
+                        $option.find('#option-label').text(label);
+
+                        updateBadge('tr[data-id="' + index + '"] > #option-attending', attendingToggle)
+                        updateBadge('tr[data-id="' + index + '"] > #option-tentative', tentativeToggle)
+                        updateBadge('tr[data-id="' + index + '"] > #option-noty', notieToggle)
+                        
+                        $('tr[data-id="' + index + '"] > #option-attending span').text(String(attendingToggle).charAt(0).toUpperCase() + String(attendingToggle).slice(1));
+                        $('tr[data-id="' + index + '"] > #option-tentative span').text(String(tentativeToggle).charAt(0).toUpperCase() + String(tentativeToggle).slice(1));
+                        $('tr[data-id="' + index + '"] > #option-noty span').text(String(notieToggle).charAt(0).toUpperCase() + String(notieToggle).slice(1));
+                    }
+                    else {
+                        let newRow = `
+                            <tr data-id="${response.index}" id="${response.index}">
+                                <td class="drag-handle" id="option-label">${label}</td>
+                                <td id="option-colour">${colour}</td>
+                                <td id="option-attending" class="nomob"><span class="badge ${attendingToggle ? 'bg-success' : 'bg-danger'}">${attendingToggle}</span></td>
+                                <td id="option-tentative" class="nomob"><span class="badge ${tentativeToggle ? 'bg-success' : 'bg-danger'}">${tentativeToggle}</span></td>
+                                <td id="option-noty" class="nomob"><span class="badge ${notieToggle ? 'bg-success' : 'bg-danger'}">${notieToggle}</span></td>
+                                <td class=""><div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-primary pt-0"><span data-feather="edit" 
+                                        onclick="ShowPresetModal('${response.index}', '${label}', '${attendingToggle}', '${tentativeToggle}', '${notieToggle}');"></span></button>
+                                    <button type="button" class="btn btn-primary pt-0 oDelete"><span data-feather="trash"></span></button>
+                                </div></td>
+                            </tr>`;
+
+                        $('#optionsTable > tbody tr:last').after(newRow);
+                        feather.replace({ 'aria-hidden': 'true' })
+
+                        $('#optionsTable').bootstrapTable('resetView');
+                        $('#optionsTable').tableDnDUpdate();
+
+                        if (response.maxOptions){
+                            $('#addOption').attr('disabled', true);
+                        } else{
+                            $('#addOption').removeAttr('disabled');
+                        }
+                    }
+
+                    $('#optSave').removeAttr('disabled');
+                    modal.hide();
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+
+                    //$('#evntAlert').prop('hidden', false).text(error);
+                    $('#optSave').removeAttr('disabled');
+                }
+            })
+        };
+
+        function updateBadge(selector, condition) {
+            const element = $(selector + ' > span');
+            element.removeClass('bg-success bg-danger')
+                   .addClass(condition ? 'bg-success' : 'bg-danger')
+                   .text(String(condition).charAt(0).toUpperCase() + String(condition).slice(1));
+        }
+
+        function Delete(index, option) {
+            
+            let data = {
+                index: index,
+            };
+            
+            let serializedData = $.param(data);
+            let url = "{% url 'discord:dash_option_del' nav_data.hash option.id %}";
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    var Modal = document.getElementById('confirmModal');
+                    var modal = bootstrap.Modal.getOrCreateInstance(Modal);
+                    modal.hide();
+
+                    $("#confirm").attr("onclick", ``)
+
+                    option.remove();
+
+                    $('#addOption').removeAttr('disabled');
+
+                    recalculateIndices();
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+                }
+            })
+        }
+
+        function recalculateIndices() {
+            $('#optionsTable tbody tr').each(function (index) {
+                $(this).data('id', index);
+            });
+        }
+        {% endif %}
+
+        function SaveRoleSet(index) {
+            $('#roleSetSave').attr('disabled', true);
+            
+            let optionRoles = $('#roleAssignmnetTable > tbody').children('tr')
+            let name = $('#roleSetName').val()
+            
+            var optionRoles_obj = []
+            optionRoles.each(function() {
+                let $tr = $(this);
+                let role_id = $tr.find('.option-role-select').val();
+                let role_name = $tr.find('.option-role-select option:selected').text().trim();
+                let opt_index = $tr.data('id');
+
+                optionRoles_obj.push({
+                    role_id: role_id,
+                    role_name: role_name,
+                    index: opt_index
+                });
+            });
+            
+            let data = {
+                name: name,
+                roles: optionRoles_obj,
+            };
+            
+            let url = "{% url 'discord:save_preset_roles' option.id nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', index);
+            
+            $.ajax({
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/json'
+                },
+                type: 'POST',
+                url: url,
+                data: JSON.stringify(data),
+                success: function (response) {
+                    const aModal = document.getElementById('roleSetModal');
+                    const modal = bootstrap.Modal.getOrCreateInstance(aModal);
+
+                    let index = response.index
+                    let html = response.html
+                    
+                    var tr = $(`#roleSetsTable > tbody > tr[data-id="${index}"]`)
+                    
+                    if(tr.length)
+                    {
+                        tr.empty()
+                        tr.append(`<td>${name}</td>
+                            <td>${html}</td>
+                            <td><div class="btn-group" role="group">
+                                <button type="button" class="btn btn-primary pt-0"><span data-feather="edit" 
+                                onclick="ShowRoleSetModal('${index}');"></span></button>
+                                <button type="button" class="btn btn-primary pt-0" onclick="DeleteRoleSet('${index}');">
+                                <span data-feather="trash"></span></button>
+                            </div></td>`)
+                    }
+                    else {
+                        $('#roleSetsTable > tbody').append(`<tr data-id="${index}" id="${index}">
+                            <td>${name}</td>
+                            <td>${html}</td>
+                            <td><div class="btn-group" role="group">
+                                <button type="button" class="btn btn-primary pt-0"><span data-feather="edit" 
+                                onclick="ShowRoleSetModal('${index}');"></span></button>
+                                <button type="button" class="btn btn-primary pt-0" onclick="DeleteRoleSet('${index}');">
+                                <span data-feather="trash"></span></button>
+                            </div></td>
+                        </tr>`)
+                    }
+
+                    $('#roleSetSave').removeAttr('disabled');
+                    modal.hide();
+                    
+                    feather.replace({ 'aria-hidden': 'true' })
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+
+                    //$('#evntAlert').prop('hidden', false).text(error);
+                    $('#roleSetSave').removeAttr('disabled');
+                }
+            })
+        };
+
+        function DeleteRoleSet (id) {
+            url = "{% url 'discord:delete_preset_role' option.id nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', id);
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: '',
+                success: function (response) {
+                    $('#roleSetsTable > tbody > tr[data-id="' + id + '"]').remove();
+                },
+                error: function (response) {
+                    console.log('ERROR:' + response.error);
+                }
+            });
+        };
+    </script>
+{% else %}
+    <script>
+        $( document ).ready(function() {
+            $('a[id="presets"]').addClass('active');
+        });
+    </script>
+{% endif %}
+{% endblock %}

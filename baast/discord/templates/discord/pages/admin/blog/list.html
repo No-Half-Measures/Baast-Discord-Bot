@@ -1,0 +1,115 @@
+{% extends "discord/dash_base.html" %} 
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-2xl font-bold">Blog Posts</h1>
+
+        <button type="button" class="btn btn-success" onclick="location.href='{% url 'discord:admin_blog_create' %}'">Create New Post</button>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="table table-striped min-w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3">Title</th>
+                    <th scope="col" class="px-6 py-3">Type</th>
+                    <th scope="col" class="px-6 py-3">Author</th>
+                    <th scope="col" class="px-6 py-3">Created</th>
+                    <th scope="col" class="px-6 py-3">Status</th>
+                    <th scope="col" class="px-6 py-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for post in page_obj %}
+                <tr>
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-medium text-gray-900">{{ post.title }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs rounded-full {% if post.post_type == 'news' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ post.get_post_type_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900">{{ post.get_author_name|default:post.get_author_name }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900">{{ post.created_at|date:"M d, Y" }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs rounded-full {% if post.is_published %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ post.is_published|yesno:"Published,Draft" }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm font-medium">
+                        <div class="btn-group" role="group" aria-label="Basic example">
+                            <button onclick="location.href='{% url 'discord:admin_blog_edit' post.slug %}'" type="button" class="btn btn-primary">Edit</button>
+                            <button onclick="deletePost('{{ post.slug }}')" type="button" class="btn btn-danger">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                        No blog posts found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="mt-4 flex justify-center">
+        <nav class="inline-flex rounded-md shadow">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Previous
+            </a>
+            {% endif %}
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Next
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function deletePost(slug) {
+        if (confirm('Are you sure you want to delete this post?')) {
+            fetch(`/panel/admin/post/${slug}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                }
+            });
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %} 

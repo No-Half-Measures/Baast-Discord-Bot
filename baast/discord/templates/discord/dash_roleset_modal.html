@@ -1,0 +1,37 @@
+<div class="modal fade panel-modal" tabindex="-1" id="roleSetModal">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalHead">Creating Role Assignment Preset...</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger" role="alert" id="ntempAlert" hidden>Error: ...............</div>
+                <div class="alert alert-danger" role="alert" id="editRoleSetMsg" hidden>Please note that changes to the roleset will not affect existing signups to an event using this preset and roleset.
+                    In order to do this you will need to refresh the event in Discord, please only do this once you have done all the changes you need to make.</div>
+
+                <div class="panel-field panel-field-wide input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text justify-content-end">Name</span>
+                    </div>
+                    <input type="text" class="form-control" aria-label="label" autocomplete="off" value="" maxlength="100" minlength="1" id="roleSetName">
+                </div>
+
+                <table id="roleAssignmnetTable" class="dataTable-table table table-striped table-hover role-assignment-table">
+                    <thead>
+                        <tr>
+                            <th data-field="label" data-sortable="false"><a href="#" class="dataTable-sorter">Option</a></th>
+                            <th data-field="colour" data-sortable="false"><a href="#" class="dataTable-sorter">Roles</a></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="SaveRoleSet('-1')" id="roleSetSave">Save</button>
+            </div>
+        </div>
+    </div>
+</div>

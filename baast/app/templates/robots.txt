@@ -1,0 +1,6 @@
+# robots.txt
+User-Agent: *
+Disallow: /panel/
+
+User-agent: GPTBot
+Disallow: /panel/

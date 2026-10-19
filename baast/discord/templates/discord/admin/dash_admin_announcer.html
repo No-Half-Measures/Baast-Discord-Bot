@@ -1,0 +1,131 @@
+{% extends "discord/dash_base.html" %} 
+{% load static %}
+{% block title %}Announcer{% endblock %}
+{% block content %}	
+    <div class="row gx-4 pt-4 px-auto">
+        <div class="col mb-2">
+            <div class="card card-raised">
+                <div class="card-header bg-blue">
+                    Announcer Markdown Writter
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" role="alert" id="aAlert" hidden>Error: .............</div>
+
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Title</span>
+                        <input type="text" class="form-control" aria-label="Embed Title" autocomplete="off" maxlength="200" minlength="1" value="" id="aTitle"></input>
+                    </div>
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Description</span>
+                        <textarea style="height:220px;" class="form-control" aria-label="Embed Description" autocomplete="off" maxlength="1600" minlength="1" id="aDescription"></textarea>
+                    </div>
+                    {% comment %} <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Image</span>
+                        <input type="text" class="form-control" aria-label="Embed Image" autocomplete="off" maxlength="200" minlength="1" value="" id="aImg"></input>
+                    </div> {% endcomment %}
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Attachments</span>
+                        <input type="file" name="file" class="form-control" aria-label="Embed Image" autocomplete="off" maxlength="200" minlength="1" value="" id="fileInput"></input>
+                    </div>
+                    <div class="input-group pb-4">    
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Are you testing?</span>
+                        <select class="form-select" aria-label="Are you testing:" autocomplete="off" id="aTesting">
+                            <option value='true' Selected>True</option>
+                            <option value='false'>False</option>
+                        </select>
+                    </div>
+                    <div class="input-group pb-4">    
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Push to all guilds Log channels?</span>
+                        <select class="form-select" aria-label="Are you testing:" autocomplete="off" id="aToLogs">
+                            <option value='true'>True</option>
+                            <option value='false' Selected>False</option>
+                        </select>
+                    </div>
+                    <div class="input-group pb-4">    
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Push to Baast News?</span>
+                        <select class="form-select" aria-label="Are you testing:" autocomplete="off" id="aToNews">
+                            <option value='true'>True</option>
+                            <option value='false' Selected>False</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-footer bg-blue">
+                    <button type="button" class="btn btn-success " onclick="SendAnnouncement();">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block js%}
+    <script>
+        $( document ).ready(function() {
+            $('a[id="aannouncer"]').addClass('active');
+        });
+
+        function SendAnnouncement() {
+            var fileInput = document.getElementById('fileInput');
+            var file = fileInput.files[0];
+
+            if (file) {
+                var formData = new FormData();
+                formData.append('files', file);
+
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    url:  "{% url 'discord:upload_file' %}",
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        attachmentURL = response["attachment"]
+
+                        // serialize the data for sending the form data.
+                        var serializedData = $(this).serialize();
+
+                        title = $('#aTitle').val();
+                        description = $('#aDescription').val();
+                        img = attachmentURL;
+                        push_to_logs = $('#aToLogs').val();
+                        is_test = $('#aTesting').val();
+                        push_to_news = $('#aToNews').val();
+
+                        
+                        serializedData += 'title=' + title + '&desc=' + description;
+                        serializedData += '&img=' + img;
+                        serializedData += '&push_to_logs=' + push_to_logs;
+                        serializedData += '&is_test=' + is_test;
+                        serializedData += '&push_to_news=' + push_to_news;
+
+                        url = "{% url 'discord:admin_announcer' %}"
+                        // make POST ajax call
+                        $.ajax({
+                            headers: {'X-CSRFToken': csrftoken},
+                            type: 'POST',
+                            url: url,
+                            dataType: "json",
+                            data: serializedData,
+                            success: function (response) {
+                                $('#aAlert').prop('hidden', false);
+                                $('#aAlert').text("Succesfully Posted")
+                            },
+                            error: function (response) {
+                                $('#aAlert').prop('hidden', false);
+                                $('#aAlert').text(response.responseJSON.error)
+
+                                console.log('ERROR:' + response.responseJSON.error);
+                            }
+                        })
+                    },
+                    error: function() {
+                        alert('Error uploading file');
+                    }
+                });
+            }
+
+
+            
+        };
+        
+    </script>
+{% endblock %}

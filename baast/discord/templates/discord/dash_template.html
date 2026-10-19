@@ -1,0 +1,445 @@
+{% extends "discord/dash_base.html" %} 
+{% load static %}
+{% block title %}Template{% endblock %}
+{% block nav_title %}{{ template.name }} Template{% endblock %}
+{% block content %}
+{% if nav_data.conf.is_premium %}
+    {% include "discord/dash_cells_modal.html" %}
+{% else %}
+    <div class="alert alert-warning mt-4" role="alert">
+        This feature is only available to Premium Guilds. <a href="{% url 'events:pricing' %}">Upgrade</a>
+    </div>
+{% endif %}
+
+    <div class="alert alert-danger" role="alert" id="Alert" hidden>
+        <p id="alertText">ERROR TEXT</p>
+    </div>
+    
+    <div class="row gx-4 pt-4">
+        <div class="col-lg-6">
+            <!-- Email notifications preferences card-->
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Details
+                </div>
+                <div class="card-body">
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Name</span>
+                        </div>
+                        <input type="text" class="form-control" aria-label="name" autocomplete="off" maxlength="100" minlength="1" value="{{ template.name }}" id="tempName" data-lpignore="true"></input>
+                    </div>
+
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Default Event Title</span>
+                        </div>
+                        <input type="text" class="form-control" aria-label="title" autocomplete="off" maxlength="100" minlength="1" value="{{ template.title }}" id="tempTitle" data-lpignore="true"></input>
+                    </div>
+
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Default Event Description</span>
+                        </div>
+                        <input type="text" class="form-control" aria-label="description" autocomplete="off" maxlength="1000" minlength="1" height="120" value="{{ template.description }}" id="tempDescription" data-lpignore="true"></input>
+                        {% comment %} <textarea id="w3review" name="w3review" rows="4" cols="50">
+                            None
+                        </textarea> {% endcomment %}
+                    </div>
+
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Thumbnail Url</span>
+                        </div>
+                        <input type="text" class="form-control" aria-label="name" autocomplete="off" maxlength="256" minlength="1" value="{{ template.thumb_url }}" id="tempThumb" data-lpignore="true"></input>
+                    </div>
+                    {% if user.is_staff %} <!-- THIS IS ONLY STAFF FOR NOW -->
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Emoji</span>
+                        </div>
+                        <input type="text" class="form-control" aria-label="name" autocomplete="off" maxlength="100" minlength="1" value="{{ template.emoji }}" id="tempEmoji" data-lpignore="true"></input>
+                    </div>
+                    {% endif %}
+                    {% if template.hasSheetAccess == False and template.sheetid %}
+                    <div class="alert alert-danger" role="alert">
+                        <p>The bot does not have access to this sheet please give it <a href='https://docs.google.com/spreadsheets/d/{{ template.sheetid }}/edit?usp=sharing'>Access</a>.</p>
+                    </div>
+                    {% endif %}
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Spread Sheets ID</span>
+                        </div>
+                        <input type="text" class="form-control" aria-label="sheet" autocomplete="off" value="{{ template.sheetid }}" id="tempSheet" data-lpignore="true"></input>
+                    </div>
+
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Worksheet ID</span>
+                        </div>
+                        <input type="text" class="form-control" aria-label="sheet" autocomplete="off" value="{{ template.worksheetid }}" id="tempWorksheet" data-lpignore="true"></input>
+                    </div>
+
+                    <h5 class="modal-title">Sheet Data</h5>
+                    
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Title Cell</span>
+                        </div>
+                        <input type="text" class="form-control sheetcell" aria-label="sheet" autocomplete="off" maxlength="6" minlength="2" value="{{ template.cell_title }}" id="tempCellTitle" data-lpignore="true"></input>
+                    </div>
+
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Description Cell</span>
+                        </div>
+                        <input type="text" class="form-control sheetcell" aria-label="sheet" autocomplete="off" maxlength="6" minlength="2" value="{{ template.cell_desc }}" id="tempCellDesc" data-lpignore="true"></input>
+                    </div>
+
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Time/Date Cell</span>
+                        </div>
+                        <input type="text" class="form-control sheetcell" aria-label="sheet" autocomplete="off" maxlength="6" minlength="2" value="{{ template.cell_date }}" id="tempCellDate" data-lpignore="true"></input>
+                    </div>
+
+                    <div class="input-group pb-4">
+                        <div class="input-group-prepend" style="min-width:13%"> 
+                            <span class="input-group-text justify-content-end">Discord Link Cell</span>
+                        </div>
+                        <input type="text" class="form-control sheetcell" aria-label="sheet" autocomplete="off" maxlength="6" minlength="2" value="{{ template.cell_link }}" id="tempCellLink" data-lpignore="true"></input>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Linked Presets
+                </div>
+                <div class="card-body p-4">
+                    <table id="optionsTable" class="dataTable-table table table-striped table-hover" style="table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th data-field="name" style="min-width: 30%; width: 100%;"><a href="#">Preset</a></th>
+                                <th class="" data-sortable="false" style="width: 120px;"><a href="#"></a></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for opt in template.lnkd_opt_presets%}
+                                <tr data-id="{{forloop.counter0}}" id="{{forloop.counter0}}" onclick="GetCells({{opt}});">
+                                    {% for preset in presets %}
+                                        {% if preset.id == opt %}
+                                            <td class="drag-handle" id="option-name">{{preset.name}}</td>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <td class="">
+                                        {% if nav_data.conf.is_premium and nav_data.conf.guild == template.gid.guild%}
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-primary pt-0" onclick="PDelete('{{opt}}', '{{forloop.counter0}}');"><span data-feather="trash"></span></button>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if nav_data.conf.is_premium and nav_data.conf.guild == template.gid.guild%}
+                    <form id="add-preset-link" method="post">
+                    {% csrf_token %}
+                        <div class="input-group mb-3">
+                            <label class="input-group-text" for="add_preset">Add:</label>
+                            <select class="form-select" id="add_preset" autocomplete="off" aria-label="Select Preset to link...">
+                            {% for preset in presets %}
+                                {% if preset.id not in template.lnkd_opt_presets %}
+                                    <option value='{{preset.id}}'>{{preset.name}}</option>
+                                {% endif %}
+                            {% endfor %}
+                            </select>
+                            <button id="addec" class="btn btn-success" type="submit" ><span data-feather="plus"></span></button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if nav_data.conf.is_premium and nav_data.conf.guild == template.gid.guild%}
+        <div class="d-grid gap-2 col-6 mx-auto mt-4">
+            <button id="save_btn" type="submit" class="btn btn-success" data-bs-toggle="tooltip" data-bs-placement="right" title="Saved!">Save</button>
+        </div>
+        {% endif %}
+    </div>
+
+{% endblock %}
+{% block js%}
+{% if nav_data.conf.is_premium and nav_data.conf.guild == template.gid.guild%}
+    <script>
+        $(document).ready(function () {
+            $('a[id="templates"]').addClass('active');
+
+            $('input[data-toggle="toggle"]').bootstrapToggle({
+                onlabel: 'Enabled',
+                offlabel: 'Disabled'
+            });
+
+            $('.sheetcell').bind('keyup blur',function(){ 
+                var node = $(this);
+                node.val(node.val().replace(/[^a-zA-Z0-9 ]/g,'') ); }
+            );
+        });
+
+        $("#save_btn").click(function () {
+            $(this).attr('disabled', true);
+
+            let name = $('#tempName').val();
+            let title = $('#tempTitle').val();
+            let description = $('#tempDescription').val();
+            let thumb = $('#tempThumb').val();
+            let emoji = $('#tempEmoji').val();
+            let sheetid = $('#tempSheet').val();
+            let worksheetid = $('#tempWorksheet').val();
+
+            let cellTitle = $('#tempCellTitle').val();
+            let cellDesc = $('#tempCellDesc').val();
+            let cellDate = $('#tempCellDate').val();
+            let cellLink = $('#tempCellLink').val();
+
+            let data = {
+                name: name,
+                title: title,
+                description: description,
+                thumb: thumb,
+                emoji: emoji,
+                sheetid: sheetid,
+                worksheetid: worksheetid,
+                cell_title: cellTitle,
+                cell_desc: cellDesc,
+                cell_date: cellDate,
+                cell_link: cellLink,
+            };
+            
+            let serializedData = $.param(data);
+            let url = "{% url 'discord:ajax_template' nav_data.hash template.id %}";
+
+            // make POST ajax call
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    if(response['hasAccess'] == false) {
+                        $('#Alert').empty()
+                        $('#Alert').prop('hidden', false).append(`<p>The bot does not have access to this sheet please give it <a href='https://docs.google.com/spreadsheets/d/${sheetid}/edit?usp=sharing'>Access</a>.</p>`);
+                    }
+                    else {
+                        $('#Alert').empty()
+                        $('#Alert').prop('hidden', true)
+                    }
+
+                    $('#save_btn').removeAttr('disabled');
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+
+                    $('#Alert').empty()
+                    $('#Alert').prop('hidden', false).text(error);
+                    $('#save_btn').removeAttr('disabled');
+                }
+            })
+        });
+
+        function GetCells(presetid) {
+            let url = "{% url 'discord:ajax_template_cells' nav_data.hash template.id 'PLACEHOLDER' %}".replace('PLACEHOLDER', presetid);
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'GET',
+                url: url,
+                dataType: "json",
+                success: function (response) {
+                    $('#modal-inputs').empty();
+                    
+                    $.each(response["cells_labels"], function(key, value){
+                        var inputBlock = `<div class="input-group pb-4">
+                            <div class="input-group-prepend" style="min-width:23%"> 
+                                <span class="input-group-text justify-content-end">${key}</span>
+                            </div>
+                            <input type="text" class="form-control sheetcell" aria-label="cell" autocomplete="off" value="${value}" maxlength="6" minlength="2" id="${key}_cell"></input>
+                        </div>`;
+    
+                        $('#modal-inputs').append(inputBlock);
+                    });
+
+                    $('#cellsSave').attr('onClick', `SaveCells(${presetid});`);
+                    
+                    const optionModal = document.getElementById('cellsModal');
+                    const modal = bootstrap.Modal.getOrCreateInstance(optionModal);
+                    modal.show();
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+                }
+            })
+        }
+
+        function SaveCells(presetid) {
+            let cells = {};
+            let inputs = $('#modal-inputs').children().toArray().reverse(); // Convert to array and reverse
+            $.each(inputs, function(i, elm) {
+                let input = $(elm).find('input'); // Use .find() to locate the input within the element
+                let inputId = input.attr('id').replace('_cell', '');
+                cells[inputId] = input.val();
+            });
+            
+            let serializedData = $.param(cells);
+            
+            let url = "{% url 'discord:ajax_template_cells' nav_data.hash template.id 'PLACEHOLDER' %}".replace('PLACEHOLDER', presetid);
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                data: serializedData,
+                dataType: "json",
+                success: function (response) {
+                    const optionModal = document.getElementById('cellsModal');
+                    const modal = bootstrap.Modal.getOrCreateInstance(optionModal);
+                    modal.hide();
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+                }
+            })
+        }
+
+        function PDelete(id, index) {
+            event.stopPropagation();
+
+            let data = {
+                id: id,
+                index: index,
+            };
+            
+            let serializedData = $.param(data);
+            let url = "{% url 'discord:ajax_template_link' nav_data.hash template.id 'remove' %}";
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    let $option = $('tr[data-id="' + index + '"]');
+                    $option.remove();
+
+                    var input = `<option value='${response["data"]["id"]}'>${response["data"]["name"]}</option>`
+                    $('#add_preset').append(input)
+                    recalculateIndices();
+                },
+                error: function(xhr, status, error) {
+                    // alert the error if any error occured
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+
+                    {% comment %} $('#Alert').empty();
+                    $('#Alert').prop('hidden', false).text(error);{% endcomment %}
+                }
+            })
+        }
+
+        function recalculateIndices() {
+            $('#optionsTable tbody tr').each(function (index) {
+                $(this).data('id', index);
+            });
+        }
+
+        $("#add-preset-link").submit(function (e) {
+            // preventing from page reload and default actions
+            e.preventDefault();
+            
+            // append id
+            let element = $(this).find('select[id="add_preset"]');
+            let selected = element.find(":selected")
+
+            if ( ~selected.text().toLowerCase().indexOf("select channel") ) {
+                return
+            }
+
+            // serialize the data for sending the form data.
+            let data = {
+                id: selected.attr('value')
+            };
+            let serializedData = $.param(data);
+
+            url = "{% url 'discord:ajax_template_link' nav_data.hash template.id 'add' %}";
+
+            // make POST ajax call
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                data: serializedData,
+                success: function (response) {
+                    var index = 0;
+                    if ($('#optionsTable > tbody tr').length > 0) {
+                        index = parseInt($('#optionsTable > tbody tr:last').attr('id')) + 1;
+                    }
+
+                    // add to list
+                    var input = `<tr data-id="${index}" id="${index}" onclick="GetCells(${response["data"]["id"]});">
+                                    <td class="drag-handle" id="option-name">${response["data"]["name"]}</td>
+                                    <td class="">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-primary pt-0" onclick="PDelete('${response["data"]["id"]}', '${index}');"><span data-feather="trash"></span></button>
+                                        </div>
+                                    </td>
+                                </tr>`
+                    
+                    if (index == 0){
+                        $('#optionsTable > tbody').append(input);
+                    }
+                    else{
+                        $('#optionsTable > tbody tr:last').after(input);
+                    }
+                    feather.replace({ 'aria-hidden': 'true' })
+
+                    // remove from options
+                    selected.remove();
+                },
+                error: function(xhr, status, error) {
+                    // alert the error if any error occured
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+
+                    {% comment %} $('#Alert').empty();
+                    $('#Alert').prop('hidden', false).text(error);{% endcomment %}
+                }
+            })
+        })
+    </script>
+{% else %}
+    <script>
+        $( document ).ready(function() {
+            $('a[id="templates"]').addClass('active');
+        });
+    </script>
+{% endif %}
+{% endblock %}

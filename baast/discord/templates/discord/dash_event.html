@@ -1,0 +1,860 @@
+{% extends "discord/dash_base.html" %} 
+{% load cache %}
+{% load static %}
+{% load listfilters %}
+{% cache 600 title %}
+{% block title %}Editing Event{% endblock %}
+{% block nav_title %}{{ event.title }}{% endblock %}
+{% endcache %}
+{% block style %}
+{% endblock %}
+{% block content %}
+{% if nav_data.conf.is_premium == False %}
+    {% include "discord/dash_premium_modal.html" %}
+{% endif %}
+    {% include "discord/dash_progress_bar.html" %}
+    {% include "discord/dash_event_modal.html" %}
+    {% include "discord/dash_confirm_modal.html" %}
+    
+    <div class="row gx-4 pt-4">
+        <div class="col mb-2 ">
+            {% if event.isMarkedDelete %}
+            <div class="alert alert-danger" role="alert">This event is currently deleted and marked for permanent deletion in {{event.delete_date|timeuntil}}!</div>
+            {% endif %}
+            {% if is_linked_event == True %}
+            <div class="alert alert-warning" role="warning">This event is shared by another guild and as such you can only remove user signups from this guild and not edit anything related to the event details.</div>
+            {% endif %}
+            <div class="alert alert-danger" role="alert" id="alert" hidden>...</div>
+        </div>
+    </div>
+
+    <div class="row gx-4 pt-2">
+        <div class="col-lg-6">
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Event Details
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" role="alert" id="evntAlert" hidden>Error: .............</div>
+                    {% if event.isMarkedDelete %}
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Mention</span>
+                        <select class="selectpicker form-control" aria-label="Select role(s)" id="reMention" multiple data-max-options="20" data-none-selected-text="None" data-width="auto">
+                            {% for role in roles %}
+                                <option value='{{role.id}}'>{{role.name}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    
+                    {% cache 600 channels %}
+                    <div class="input-group pb-4">    
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Channel</span>
+                        <select class="form-select" aria-label="Select a channel to post the event in:" autocomplete="off" id="eChannels" {% if not event.isMarkedDelete %}disabled{% endif %}>
+                            {% for channel in channels %}
+                                {% comment %} {% if channel.discord_id in nav_data.conf.event_channels %} {% endcomment %}
+                                {% if channel.discord_id == event.channel %}
+                                <option value='{{channel.discord_id}}' {% if channel.discord_id == event.channel %}Selected{%endif%}>{{channel.name}}</option>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% for channel in channels %}
+                                {% if channel.discord_id not in config.event_channels %}
+                                <option value='{{channel.discord_id}}' {% if channel.discord_id == event.channel %}Selected{%endif%}>{{channel.name}}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endcache %}
+
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Title</span>
+                        <input type="text" class="form-control" aria-label="Event Title" autocomplete="off" maxlength="200" minlength="1" value="{{ event.title }}" id="eTitle" {% if is_linked_event == True %}disabled{% endif %}></input>
+                    </div>
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Description</span>
+                        <textarea style="height:120px;" class="form-control" aria-label="Event Description" autocomplete="off" maxlength="1600" minlength="1" id="eDescription" {% if is_linked_event == True %}disabled{% endif %}>{{ event.description }}</textarea>
+                    </div>
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Thumbnail</span>
+                        <input type="text" class="form-control" aria-label="Event Thumbnail" autocomplete="off" id="eThumb" {% if is_linked_event == True %}disabled{% endif %}>{{ event.image }}</input>
+                    </div>
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Color</span>
+                        <input type="text" class="form-control" id="ehexInput" autocomplete="off" maxlength="7" minlength="7" value="{{ event.color }}">
+                        <input type="color" class="m-auto form-control form-control-color d-block" autocomplete="off" id="colorPicker" value="{{ event.color }}" {% if is_linked_event == True %}disabled{% endif %}></input>
+                    </div>
+					
+					<div class="col-12 pb-4">
+						<div class="input-group date">
+                            <span class="input-group-text justify-content-end" style="min-width:13%">Date</span>
+                            <input id="eDateTime" type="text" class="form-control" autocomplete="off" {% if is_linked_event == True %}disabled{% endif %}>
+							
+							<select class="form-select" aria-label="Select a Timezone:" autocomplete="off" id="eTimeZone" {% if is_linked_event == True %}disabled{% endif %}>
+							{% if timezones %}
+								{% for tz in timezones %}
+									<option value={{tz}}>{{tz}}</option>
+								{% endfor %}
+							{% endif %}
+							</select>
+							
+                            <span class="input-group-text bg-white d-block">
+                                <span data-feather="calendar"></span>
+                            </span>
+                        </div>
+                    </div>
+
+
+                    <div class="col-12 pb-4">
+                        <div class="input-group recurring">
+                            <span class="input-group-text justify-content-end" style="min-width:13%">Recurring Interval  <sub>(days)</sub></span>
+                            <input id="eRecInterval" type="text" class="form-control" autocomplete="off" value="{{ event.recurring_interval }}" {% if is_linked_event == True %}disabled{% endif %}>
+							
+                            <span class="input-group-text" style="min-width:13%">Until</span>
+                            
+                            <div class="input-group-text">
+                                <div class="form-check form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" id="eRecEndless" {% if not event.recurring_until %}checked{% endif %} {% if is_linked_event == True %}disabled{% endif %}>
+                                    <label class="form-check-label" for="eRecEndless">Endless</label>
+                                </div>
+                            </div>
+                            
+							<input id="eRecDate" type="text" class="form-control" autocomplete="off" {% if is_linked_event == True %}disabled{% endif %} {% if not event.recurring_until %}disabled{% endif %}>
+
+                            <span class="input-group-text bg-white d-block">
+                                <span data-feather="repeat"></span>
+                            </span>
+                        </div>
+					</div>
+
+                    <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end" style="min-width:13%">Capacity</span>
+                        <input id="eCapacity" type="number" min="1" max="100" class="form-control px-2" autocomplete="off"
+                         placeholder="capacity" aria-label="Capacity" {% if is_linked_event == True %}disabled{% endif %}>
+                    </div>
+
+                    {% comment %} <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end range-input" style="min-width:13%" value="{{ event.capacity }}">Capacity</span>
+                        <input type="range" class="form-range form-control input-small px-2" autocomplete="off" min="0" max="100" value="" id="eCapacity"
+                        data-bs-toggle="tooltip" data-bs-placement="right" title="" style="height: auto !important;" {% if is_linked_event == True %}disabled{% endif %}>
+                    </div> {% endcomment %}
+
+                    {% comment %} <div class="col-12 pb-4">
+                        <div class="form-check form-switch">
+                            <label class="form-check-label" for="flexSwitchCheckDefault">Recurring Event</label>
+                            <input class="form-check-input" type="checkbox" id="eRecurring" autocomplete="off" {% if event.recurring %}checked{% endif %}>
+                        </div>
+                    </div> {% endcomment %}
+                    
+                    {% comment %} <div class="input-group pb-4">
+                        <span class="input-group-text justify-content-end range-input" style="min-width:13%">Recurring Event</span>
+                        <input type="checkbox" class="btn-check" id="btn-check" autocomplete="off">
+                        <label class="btn btn-tgl" for="btn-check">Single toggle</label>
+                    </div> {% endcomment %}
+                </div>
+
+                
+                <div class="card-footer bg-blue">
+                    {% if is_linked_event == False %}
+                    <button id="eSave" type="button" class="btn btn-success" onclick="EventSave('{{event.id}}');">Save</button>
+                    
+                    <button id="eCopy" type="button" class="btn btn-primary" onclick="EventCopy();">Copy</button>
+                    {% endif %}
+
+                    {% if is_linked_event == False and event.isMarkedDelete %}
+                    <button id="eRestore" type="button" class="btn btn-warning">Restore</button>
+                    {% else %}
+                    <button id="eDelete" type="button" class="btn btn-danger">Delete</button>
+                    {% endif %}
+                </div>
+                
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    Info
+                </div>
+                <div class="card-body p-4">
+
+                    {% for key, value in sentReminders.items %}
+                    <div class="btn-group d-flex pb-2" role="group">
+                        <button type="button" class="btn btn-outline-secondary col-6 col-xxl-2" disabled>{{key}}</button>
+                        <button type="button" class="btn btn-{% if value %}success{% else %}danger{% endif %} col-6" disabled>{% if value %}Sent{% else %}Not Sent{% endif %}</button>
+                    </div>
+                    {% endfor %}
+                    {% if config.is_premium %}
+                    <div class="btn-group d-flex pb-2" role="group">
+                        <button type="button" class="btn btn-outline-secondary col-6 col-xxl-2" disabled>* Event Check-in</button>
+                        <button type="button" class="btn btn-{% if sentCheckin %}success{% else %}danger{% endif %} col-6" disabled>{% if sentCheckin %}Sent{% else %}Not Sent{% endif %}</button>
+                    </div>
+
+                    
+                    <div class="input-group mb-2 mt-2">
+                        <span class="input-group-text justify-content-end align-items-end col-2" style="width: 30%;" id="basic-addon1">* Sheet:</span>
+                        <input type="text" class="form-control col-6" value="https://docs.google.com/spreadsheets/d/{{guild.config.p_sheetid}}/edit#gid={{ event.worksheet_id }}" aria-label="autoclean_t" aria-describedby="basic-addon1" autocomplete="off" disabled>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row gx-6 pt-2 mb-2">
+            {% for data in option_counts %}
+                {% if option_counts|length > 3 %}
+                <div class="col col-sm-2 mb-2">
+                {% else %}
+                <div class="col col-sm-4 mb-2">
+                {% endif %}
+                    <div class="card card-raised bg-gold text-white">
+                        <div class="card-body px-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="me-2">
+                                    <div class="display-5 text-white">{{data.1}}</div>
+                                    <div class="card-text">{{data.0}}</div>
+                                </div>
+                                <div class="icon-circle bg-white-50 "><span data-feather="check-circle"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+            
+            {% for key, list in attending_users.items %}
+            <div class="card card-raised mb-3">
+                <div class="card-header bg-blue">
+                    {{key}}
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" onsubmit="return false">
+                    {% csrf_token %}
+                    <div class="input-group mb-2 mt-2">
+                        {% for user in list.users %}
+                        <div class="input-group mb-2 mt-2">
+                            <input type="text" class="form-control" value="{{user.name}}" id="{{user.id}}" name="attending_usr" readonly/>
+                            <button class="btn btn-danger delSignup" type="submit" value="{{user.id}}" data-index="{{list.id}}"><span data-feather="minus"></span></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
+{% block js%}
+    <script>
+		now = new Date();
+		const _tDateTime = new tempusDominus.TempusDominus(document.getElementById('eDateTime'), {
+            display: {
+                sideBySide: true
+            },
+            restrictions: {
+                minDate: now
+            }
+        });
+        const _newTDateTime = new tempusDominus.TempusDominus(document.getElementById('neDateTime'), {
+			display: {
+                sideBySide: true
+            },
+            restrictions: {
+                minDate: now
+            }
+        });
+
+        const _tRecDate = new tempusDominus.TempusDominus(document.getElementById('eRecDate'), {
+            localization: {
+                format: 'dd/MM/yyyy',
+            },
+            display: {
+                sideBySide: false,
+                viewMode: 'calendar',
+                components: {
+                    calendar: true,
+                    date: true,
+                    month: true,
+                    year: true,
+                    decades: true,
+                    clock: false,
+                    hours: false,
+                    minutes: false,
+                    seconds: false,
+                },
+            },
+            restrictions: {
+                minDate: now
+            },
+            {% if event.recurring_until %}
+            viewDate: {{event.recurring_until}},
+            {% else %}
+            viewDate: now,
+            {% endif %}
+        });
+
+        const _tNewRecDate = new tempusDominus.TempusDominus(document.getElementById('neRecDate'), {
+            localization: {
+                format: 'dd/MM/yyyy',
+            },
+            display: {
+                sideBySide: false,
+                viewMode: 'calendar',
+                components: {
+                    calendar: true,
+                    date: true,
+                    month: true,
+                    year: true,
+                    decades: true,
+                    clock: false,
+                    hours: false,
+                    minutes: false,
+                    seconds: false,
+                },
+            },
+            restrictions: {
+                minDate: now
+            },
+            viewDate: now,
+        });
+
+
+        {% if event.isMarkedDelete == False or is_linked_event == True %}
+        $(document).ready(function () {
+            $('a[id="events"]').addClass('active');
+
+            // Update hex input value when color picker changes
+            $('#necolorPicker').on('input', function(e) {
+                $('#nehexInput').val($('#necolorPicker').val());
+            });
+        
+            // Update color picker value when hex input changes
+            $('#nehexInput').on('input', function(e) {
+                const hexValue = $('#nehexInput').val();
+                if (/^#([0-9A-F]{3}){1,2}$/i.test(hexValue)) {
+                    $('#necolorPicker').val(hexValue);
+                }
+            });
+
+
+            url = "{% url 'discord:get_templates' nav_data.hash %}";
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'GET',
+                url: url,
+                dataType: "json",
+                data: '',
+                success: function (response) {
+                    var templates = response["templates"]
+                    $('#neTemplates').prop('disabled', false);
+                    
+                    for (index = 0; index < templates.length; index++) {
+                        $('#neTemplates').append( "<option value='" + templates[index]['id'] + "'>" + templates[index]['name'] + "</option>" );
+                    }
+
+                    setTimeout(function(){
+                        $('#neTemplates').val("{{event.template.id}}").change();
+                    }, 100);
+                },
+                error: function(xhr, status, error) {
+                    // alert the error if any error occured
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+                }
+            });
+        });
+        {% endif %}
+
+        $(document).ready(function () {
+            // Update hex input value when color picker changes
+            $('#colorPicker').on('input', function(e) {
+                $('#ehexInput').val($('#colorPicker').val());
+            });
+        
+            // Update color picker value when hex input changes
+            $('#ehexInput').on('input', function(e) {
+                const hexValue = $('#ehexInput').val();
+                if (/^#([0-9A-F]{3}){1,2}$/i.test(hexValue)) {
+                    $('#colorPicker').val(hexValue);
+                }
+            });
+
+
+            $('input[type="number"]').on('keyup', function()
+            {     
+                if ($(this).val() > $(this).attr('max')*1) 
+                {
+                    $(this).val($(this).attr('max'));
+                }
+                else if ($(this).val() < $(this).attr('min')*1)
+                {
+                    $(this).val($(this).attr('min'));
+                }
+            });
+
+			var eDate = new Date("{{ event.date_str  }}");
+			
+			parsedatetime = _tDateTime.dates.parseInput(eDate);
+            _tDateTime.dates.setValue(parsedatetime);
+
+            $('#eTimeZone').val("{{event.date.tzname}}").change();
+
+            $('#eCapacity').val({{ event.capacity }});
+            $('#eCapacity').attr('title', {{ event.capacity }});
+
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+
+            $('.delSignup').click(function() {
+                var $this = $(this);
+
+                var serializedData = $.param();
+                
+                var url = "{% url 'discord:signup_del' nav_data.hash event.id 'UPLACEHOLDER' 'OPLACEHOLDER' %}"
+                url = url.replace('UPLACEHOLDER', $this.val());
+                url = url.replace('OPLACEHOLDER', $this.data('index'));
+                
+                // make POST ajax call
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'POST',
+                    url: url,
+                    dataType: "json",
+                    data: serializedData,
+                    success: function (response) {
+                        location.reload();
+                    },
+                    error: function(xhr) {
+                        console.error('Error - ' + xhr.status + ': ' + xhr.statusText);
+                        $('#alert').prop('hidden', false).text(xhr.statusText);
+                        $this.removeAttr('disabled');
+                    }
+                });
+            });
+
+            {% if event.isMarkedDelete == False or is_linked_event == True %}
+            $('#eDelete').click(function() {
+                $("#m_confirm").attr("onclick", `EventDelete();`);
+
+                var _Modal = document.getElementById('confirmModal');
+                var modal = bootstrap.Modal.getOrCreateInstance(_Modal);
+                modal.show();
+            });
+
+            {% elif is_linked_event == False %}
+
+            $('#eRestore').click(function() {
+                {% if nav_data.conf.is_premium == True %}
+                $("#m_confirm")
+                    .attr("onclick", "")
+                    .off('click')
+                    .on('click', function() {
+                        var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmModal'));
+                        modal.hide();
+
+                        $('#m_confirm').text('Restore');
+                        $('#m_cancel').text('Cancel');
+                        
+                        $('#confirmModal .modal-title').text('Restoring Event');
+                        $('#confirmModal .modal-body p').text('');
+                        $('.template-options').hide();
+
+                        $('.restore-signups').show();
+                        $('.mention-options').show();
+                        $('.channels-options').show();
+
+                        $("#m_confirm")
+                            .off('click')
+                            .on('click', function() {
+                                EventRestore({{event.id}}, true, $('#restoreSignups').is(':checked'), $('#reMention').val());
+                            });
+                        
+                        $("#cancel")
+                            .off('click')
+                            .on('click', function() {
+                                modal.hide();
+                            });
+                        
+                        setTimeout(() => modal.show(), 500);
+                    });
+
+                $("#cancel")
+                    .attr("onclick", "")
+                    .off('click')
+                    .on('click', function() {
+                        var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmModal'));
+                        modal.hide();
+
+                        $('#m_confirm').text('Restore');
+                        $('#m_cancel').text('Cancel');
+                        
+                        // Show template selection modal
+                        $('#confirmModal .modal-title').text('Select Templates');
+                        $('#confirmModal .modal-body p').text('Please select the templates to use:');
+                        $('.template-options').show();
+
+                        $('.mention-options').show();
+                        $('.channels-options').show();
+                        
+                        // Populate templates dropdown (reuse existing template loading logic)
+                        loadTemplates('#restoreTemplate');
+                        
+                        $("#m_confirm")
+                            .off('click')
+                            .on('click', function() {
+                                EventRestore({{event.id}}, false, false,
+                                    $('#reMention').val(), {
+                                    template: $('#restoreTemplate').val(),
+                                    option: $('#restoreOption').val(),
+                                    roleset: $('#restoreRoleset').val()
+                                });
+                            });
+                        
+                        $("#cancel")
+                            .off('click')
+                            .on('click', function() {
+                                modal.hide();
+                            });
+                        
+                        setTimeout(() => modal.show(), 500);
+                    });
+                
+                $('#m_confirm').text('Yes');
+                $('#m_cancel').text('No');
+                
+                $('#confirmModal .modal-title').text('Reuse Previous Templates?');
+                $('#confirmModal .modal-body p').text('Would you like to reuse the previous templates and settings?\nThis will not restore the signups if you select No.');
+
+                $('.restore-signups').hide();
+                $('.template-options').hide();
+                $('.mention-options').hide();
+                $('.channels-options').hide();
+
+                $('#restoreSignups').prop('checked', true);
+
+                var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmModal'));
+                {% else %}
+                var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('premiumModal'));
+                {% endif %}
+                modal.show();
+            });
+            {% endif %}
+
+            {% if is_linked_event == False %}
+            $('#neTemplates').on("change", function() {
+                $('#neOptions').prop('disabled', true);
+
+                $('#neOptions').find('option').remove().end();
+
+                template =  $('#neTemplates').val();
+                
+                url = "{% url 'discord:get_options' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', template)
+                // make POST ajax call <str:template>/<str:hashguild>
+                $.ajax({
+                    headers: {'X-CSRFToken': csrftoken},
+                    type: 'GET',
+                    url: url,
+                    dataType: "json",
+                    data: '',
+                    success: function (response) {
+                        var options = response["options"]
+                        $('#neOptions').prop('disabled', false);
+
+                        for (index = 0; index < options.length; index++) {
+                            $('#neOptions').append( "<option value='" + options[index]['id'] + "'>" + options[index]['name'] + "</option>" );
+                        }
+                        
+                        setTimeout(function(){
+                            $('#neOptions').val("{{event.option_preset.id}}").change();
+                        }, 100);
+                    },
+                    error: function(xhr, status, error) {
+                        // alert the error if any error occured
+                        let errorMessage = xhr.status + ': ' + xhr.statusText;
+                        console.log('Error - ' + errorMessage);
+                        console.log(status);
+                        console.log(error);
+                    }
+                });
+            });
+            {% endif %}
+
+            // Handle the endless recurring toggle
+            $('#eRecEndless').change(function() {
+                if($(this).is(':checked')) {
+                    // Endless is checked - disable the date picker
+                    $('#eRecDate').prop('disabled', true);
+                    $('#eRecDate').val('');
+                } else {
+                    // Endless is unchecked - enable the date picker
+                    $('#eRecDate').prop('disabled', false);
+                    
+                    // If there's a stored date, set it, otherwise use current date
+                    {% if event.recurring_until %}
+                    var recDate = new Date("{{ event.recurring_until|date:'Y-m-d' }}");
+                    parsedRecDate = _tRecDate.dates.parseInput(recDate);
+                    _tRecDate.dates.setValue(parsedRecDate);
+                    {% else %}
+                    _tRecDate.dates.setValue(_tRecDate.dates.parseInput(now));
+                    {% endif %}
+                }
+            });
+
+            $('#neRecEndless').change(function() {
+                if($(this).is(':checked')) {
+                    // Endless is checked - disable the date picker
+                    $('#neRecDate').prop('disabled', true);
+                    $('#neRecDate').val('');
+                } else {
+                    // Endless is unchecked - enable the date picker
+                    $('#neRecDate').prop('disabled', false);
+                    
+                    // If there's a stored date, set it, otherwise use current date
+                    {% if event.recurring_until %}
+                    var recDate = new Date("{{ event.recurring_until|date:'Y-m-d' }}");
+                    parsedRecDate = _tNewRecDate.dates.parseInput(recDate);
+                    _tNewRecDate.dates.setValue(parsedRecDate);
+                    {% else %}
+                    _tNewRecDate.dates.setValue(_tNewRecDate.dates.parseInput(now));
+                    {% endif %}
+                }
+            });
+        });
+
+
+        {% if event.isMarkedDelete == False or is_linked_event == True %}
+        function EventDelete() {
+            var $this = $(this);
+
+            // serialize the data for sending the form data.
+            var serializedData = $(this).serialize();
+            url = "{% url 'discord:event_del' nav_data.hash event.id %}"
+            // make POST ajax call
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    var eventModal = document.getElementById('eventModal');
+                    var modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+                    modal.hide();
+                    
+                    $("#m_confirm").attr("onclick", ``);
+
+                    window.location.replace('/panel/{{nav_data.hash}}/events');
+                },
+                error: function (response) {
+                    // alert the error if any error occured
+                    console.log('ERROR:' + response.responseJSON.error);
+                }
+            });
+        };
+        {% elif event.isMarkedDelete == True and is_linked_event == False and nav_data.conf.is_premium == True %}
+        function EventRestore(id, reuseTemplates, restoreSignups, mentions, newSettings = null) {
+            startProgressBar(10000);
+
+            var serializedData = {
+                reuseTemplates: reuseTemplates,
+                restoreSignups: restoreSignups,
+                mentions: mentions
+            };
+            
+            if (newSettings) {
+                serializedData = {...serializedData, ...newSettings};
+            }
+            
+            url = "{% url 'discord:event_restore' nav_data.hash 'PLACEHOLDER_ID' %}".replace('PLACEHOLDER_ID', id);
+
+            mentions = $('#reMention').val().toString();
+            serializedData.mentions = mentions;
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    $('#confirmModal').find('.modal-body').prop('hidden', true);
+                    location.reload();
+                },
+                error: function(xhr) {
+                    console.error('Error - ' + xhr.status + ': ' + xhr.statusText);
+                    stopProgressBar();
+                }
+            });
+        };
+        {% endif %}
+
+        {% if is_linked_event == False %}
+        function EventSave(e) {
+            const isNewEvent = e == -1;
+            
+            const prefix = isNewEvent ? '#ne' : '#e';
+            $(`${prefix}Save`).attr('disabled', true);
+
+            startProgressBar(10000);
+        
+            const title = $(`${prefix}Title`).val();
+            const description = $(`${prefix}Description`).val();
+            const template = $(`${prefix}Templates`).val();
+            const option = $(`${prefix}Options`).val();
+            const roleset = $(`${prefix}Roleset`).val();
+            const channel = $(`${prefix}Channels`).val();
+            const date = isNewEvent ? _newTDateTime.viewDate.toISOString().split('T')[0] : _tDateTime.viewDate.toISOString().split('T')[0];
+            const time = isNewEvent ? _newTDateTime.viewDate.toISOString().split('T')[1].substring(0, 5) : _tDateTime.viewDate.toISOString().split('T')[1].substring(0, 5); // format time as HH:MM
+            const tz = $(`${prefix}TimeZone`).val();
+            const capacity = $(`${prefix}Capacity`).val();
+            const color = $(`${prefix}hexInput`).val();
+            const mentions = isNewEvent ? $('#neMention').val().toString() : null;
+            
+            const recurring_interval = $(`${prefix}RecInterval`).val().toString();
+            const recurring_until = $(`${prefix}RecEndless`).is(':checked') ? null : _tRecDate.viewDate.toISOString().split('T')[0];
+            
+            // Serialize data
+            let serializedData = $(this).serialize();
+            serializedData += `&title=${title}&desc=${description}`;
+            serializedData += `&cap=${capacity}&channel=${channel}&roleset=${roleset}`;
+            serializedData += `&template=${template}&option=${option}`;
+            serializedData += `&color=${color}`;
+            serializedData += `&date=${date}&time=${time}`;
+            serializedData += `&tz=${tz}`;
+            serializedData += `&recurring_interval=${recurring_interval}`;
+            serializedData += `&recurring_until=${recurring_until}`;
+        
+            if (isNewEvent) {
+                serializedData += `&mentions=${mentions}`;
+            }
+        
+            const url = "{% url 'discord:dash_event' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', e);
+        
+            // Make POST ajax call
+            $.ajax({
+                headers: { 'X-CSRFToken': csrftoken },
+                type: 'POST',
+                url: url,
+                dataType: 'json',
+                data: serializedData,
+                success: function (response) {
+                    const eventModal = document.getElementById('eventModal');
+                    const modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+                    modal.hide();
+                    $(`${prefix}Save`).removeAttr('disabled');
+                    
+                    stopProgressBar();
+
+                    if(isNewEvent == false){
+                        $('#alert').prop('hidden', false);
+                        $('#alert').removeClass("alert-danger");
+                        $('#alert').addClass("alert-success");
+                        $('#alert').text("Event Saved!");
+
+                        setTimeout(function(){
+                            $('#alert').prop('hidden', true);
+                        }, 5000);
+                    }
+                    else {
+                        window.location.replace(response.redirect)
+                    }
+                },
+                error: function(xhr, status, error) {
+                    // alert the error if any error occured
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+
+
+                    $(`${prefix}evntAlert`).prop('hidden', false);
+                    if (isNewEvent == false){
+                        $('#alert').addClass("alert-danger");
+                        $('#alert').removeClass("alert-success");
+                    }
+                    $(`${prefix}evntAlert`).text(errorMessage);
+
+                    $(`${prefix}Save`).removeAttr('disabled');
+                    
+                    stopProgressBar();
+                }
+            });
+        }
+        
+        {% if nav_data.conf.is_premium == True %}
+        function EventCopy() {
+            var eventModal = document.getElementById('eventModal');
+            var modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+            
+            
+            var eDate = new Date("{{ event.date_str  }}");
+            
+            $('#neTitle').val({{ event.title_repr|safe }});
+            
+            $('#neDescription').text({{ event.description_repr|safe }});
+
+            $('#nehexInput').val("{{event.color}}").trigger("input");
+            
+			parseDateTime = _newTDateTime.dates.parseInput(eDate);
+            _newTDateTime.dates.setValue(parseDateTime);
+
+            $('#neTimeZone').val("{{event.date.tzname}}").change();
+            
+            $('#neCapacity').val("{{event.capacity}}");
+            $('#neCapacity').attr('title', "{{event.capacity}}");
+
+            $('#neChannels').val("'" + "{{event.channel}}" + "'").change();
+            $('#neChannels').val("'" + "{{event.channel}}" + "'").trigger("change");
+            $("#neChannels option[value='" + "{{event.channel}}" + "']").prop('selected', true);
+
+            $('#neRecInterval').val("{{event.recurring_interval}}");
+            $('#neRecEndless').prop('checked', "{{event.recurring_until_str}}" == "None");
+            if ("{{event.recurring_until_str}}" != "None") {
+                _tRecDate.dates.setValue(_tRecDate.dates.parseInput("{{event.recurring_until_str}}"));
+            }
+
+
+            $('#neTemplates').val("{{event.template.id}}").change();
+            setTimeout(function(){
+                $('#neOptions').val("{{event.option_preset.id}}").change();
+
+                setTimeout(function(){
+                    $('#neRoleset').val("{{event.roleset.id}}").change();
+                }, 1000);
+            }, 1000);
+
+
+            $('#neSave').attr('onclick', 'EventSave("-1");');
+            
+
+            modal.show();
+
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+        };
+        {% else %}
+        function EventCopy() {
+            var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('premiumModal'));
+            modal.show();
+        }
+        {% endif %}
+
+        function recurring() {
+            if($('#eRecurring').is(':checked')) {
+                $('#rec').html("<span data-feather=\"x\">");
+            }
+            else {
+                $('#rec').html("<span data-feather=\"check\">");
+            }
+            feather.replace()
+        };
+        {% endif %}
+    </script>
+{% endblock %}

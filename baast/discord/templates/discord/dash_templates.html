@@ -1,0 +1,156 @@
+{% extends "discord/dash_base.html" %} 
+{% load static %}
+{% block title %}Templates{% endblock %}
+{% block nav_title %}Templates{% endblock %}
+{% block content %}
+{% if nav_data.conf.is_premium %}
+    {% include "discord/dash_template_modal.html" %}
+    {% include "discord/dash_confirm_modal.html" %}
+{% else %}
+    <div class="alert alert-warning mt-4" role="alert">
+        This feature is only available to Premium Guilds. <a href="{% url 'events:pricing' %}">Upgrade</a>
+    </div>
+{% endif %}
+    <div id="alert" class="alert alert-warning mt-4" role="alert" hidden>
+        <p id="alertText">ERROR TEXT</p>
+    </div>
+
+    <div class="card card-raised gx-4 mt-4 mb-5">
+        <div class="card-body p-0">
+            <div class="dataTable-wrapper dataTable-loading no-footer sortable searchable fixed-columns">
+                <div class="dataTable-container">
+                    <table id="datatablesSimple" class="dataTable-table table table-striped table-hover">
+                        <thead>
+                            <tr> 
+                                <th data-sortable="" style="width: 20%;"><a href="#" class="dataTable-sorter">Name</a></th>
+                                <th class="nomob" data-sortable="" style="width: 40%;"><a href="#" class="dataTable-sorter">Linked Presets...</a></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for template in templates%}
+                                <tr id="template-{{template.id}}" onclick="window.location.href = '/panel/{{nav_data.hash}}/template/{{template.id}}';">
+                                    <td>{{template.name}}</td>
+                                    <td class="nomob">{{template.presets_to_html | safe}}</td>
+                                    <td class="">
+                                        {% if template.id != 1 %}
+                                        <button type="button" class="btn btn-primary pt-0 tDelete" data-id="{{template.id}}"><span data-feather="trash"></span></button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            
+                        </tbody>
+                        {% if nav_data.conf.is_premium %}
+                        <tfoot>
+                            <tr >
+                                <td><button type="button" class="btn btn-success pt-0" onclick="ShowTemplateModal();"><span data-feather="plus-square"></span></button></td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block js%}
+    {% if nav_data.conf.is_premium %}
+    <script>
+        $( document ).ready(function() {
+            $('a[id="templates"]').addClass('active');
+
+            $(".tDelete").click(function (event) {
+                event.stopPropagation();
+                
+                $('#alert').prop('hidden', true)
+
+                let id = $(this).data('id');
+                $("#confirm").attr("onclick", `Delete(${id});`)
+
+                var eventModal = document.getElementById('confirmModal');
+                var modal = bootstrap.Modal.getOrCreateInstance(eventModal);
+                modal.show();
+            });
+        });
+
+        function ShowTemplateModal () {
+            const templateModal = document.getElementById('templateModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(templateModal);
+            modal.show();
+        };
+
+        function Create() {
+            $('#tempCreate').attr('disabled', true);
+
+            let name = $('#tempName').val();
+            let title = $('#tempTitle').val();
+            let description = $('#tempDescription').val();
+
+            let data = {
+                name: name,
+            };
+            
+            let serializedData = $.param(data);
+            let url = "{% url 'discord:ajax_template' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', '-1');
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                data: serializedData,
+                success: function (response) {
+                    const templateModal = document.getElementById('templateModal');
+                    const modal = bootstrap.Modal.getOrCreateInstance(templateModal);
+                    modal.hide();
+                    
+                    window.location.replace('/panel/{{nav_data.hash}}/template/' + response.id)
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = xhr.status + ': ' + xhr.statusText;
+                    console.log('Error - ' + errorMessage);
+                    console.log(status);
+                    console.log(error);
+
+                    $('#ntempAlert').prop('hidden', false).text(error);
+                    $('#tempCreate').removeAttr('disabled');
+                }
+            })
+        }
+        
+        function Delete(id) {
+            const confirmModal = document.getElementById('confirmModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(confirmModal);
+            modal.hide();
+
+            $("#confirm").attr("onclick", ``)
+
+            let url = "{% url 'discord:dash_template_del' nav_data.hash 'PLACEHOLDER' %}".replace('PLACEHOLDER', id);
+
+            $.ajax({
+                headers: {'X-CSRFToken': csrftoken},
+                type: 'POST',
+                url: url,
+                dataType: "json",
+                success: function (response) {
+                    let $option = $(`#template-${id}`);
+                    $option.remove();
+                },
+                error: function (response) {
+                    console.log('ERROR:' + response.responseJSON.error);
+                    $('#alert').prop('hidden', false).text(response.responseJSON.error);
+                    $('#alert').addClass('alert-danger');
+                    $('#alert').removeClass('alert-warning');
+                    //$('#alertText').text(response.responseJSON.error);
+                }
+            })
+        }
+    </script>
+    {% else %}
+    <script>
+        $( document ).ready(function() {
+            $('a[id="templates"]').addClass('active');
+        });
+    </script>
+    {% endif %}
+{% endblock %}

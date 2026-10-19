@@ -1,0 +1,5 @@
+{
+    "python.languageServer": "None",
+    "cursorpyright.shouldImportPylanceSettings": "always",
+    "basedpyright.disableLanguageServices": true
+}

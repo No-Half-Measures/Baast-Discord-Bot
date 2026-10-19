@@ -1,0 +1,44 @@
+<header class="p-3 bg-dark-blue text-white">
+    <div class="container-xl">
+        <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+            {% comment %} <a href="/" class="d-flex align-items-center mb-2 mb-lg-0 text-white text-decoration-none">
+                <img src="{% static 'baast_icon.png' %}" alt="" width="32" height="32" class="rounded-circle me-2">
+            </a> {% endcomment %}
+
+            <h1 class="baast-brand text-cream fw-bold text-center m-0 me-4"><a href="/" class="nav-link px-2">Baast</a></h1>
+
+            <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+                <li><a href="{% url 'events:index' %}" class="nav-link px-2 text-white" id="home">Home</a></li>
+                <li><a href="{% url 'events:blog_list' %}" class="nav-link px-2 text-white" id="blog">Blog</a></li>
+                {% comment %} <li><a href="#" class="nav-link px-2 text-white">Features</a></li> {% endcomment %}
+                <li><a href="{% url 'events:pricing' %}" class="nav-link px-2 text-white" id="pricing">Pricing</a></li>
+                {% comment %} <li><a href="https://docs.baast.app" class="nav-link px-2 text-white"  id="faq">Documentation</a></li> {% endcomment %}
+                <li><a href="https://discord.gg/RNrA9Gtxmm" class="nav-link px-2 text-white" id="faq">Discord</a></li>
+            </ul>
+
+            <div class="d-flex align-items-center text-end">
+                {% if request.user.is_authenticated %}
+                    <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+                        <a href="{% url 'discord:dash_home' %}" class="btn bg-gold my-2">Manage Events</a>
+                    </ul>
+                    <a href="{% url 'discord:dash_user' %}" class="d-block link-dark text-decoration-none ms-2">
+                        {% if user.avatar and user.avatar != 'none' %}
+                        <img src="{{ user.avatar }}" alt="" width="32" height="32" class="rounded-circle">
+                        {% else %}
+                        <img src="https://cdn.discordapp.com/embed/avatars/3.png" alt="" width="32" height="32" class="rounded-circle">
+                        {% endif %}
+                    </a>
+                    <div class="float-end ms-2">
+                        <a class="link-danger" href="/logout" aria-label="Sign-Out" data-bs-toggle="tooltip" data-bs-placement="top" title="Sign-Out">
+                            <span data-feather="log-out"></span>
+                        </a>
+                    </div>
+                {% else %}
+                    <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+                        <a href="{% url 'Discord-Login' %}" class="btn bg-gold my-2">Login with Discord</a>
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</header>
