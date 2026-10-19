@@ -1,4 +1,4 @@
-# Baast-Web
+# Baast
 
 Website, dashboard, and Discord bot for [Baast](https://baast.app), an event
 scheduling and sign-up bot for Discord communities.
